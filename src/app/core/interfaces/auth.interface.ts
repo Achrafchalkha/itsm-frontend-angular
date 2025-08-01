@@ -26,6 +26,8 @@ export interface User {
   nom: string;
   email: string;
   role: UserRole;
+  telephone?: string;
+  localisation?: string;
 }
 
 export enum UserRole {
