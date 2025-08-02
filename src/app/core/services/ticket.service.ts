@@ -65,6 +65,8 @@ export interface EvaluationResponse {
   dateEvaluation: string;
 }
 
+
+
 export interface UserTicketStats {
   totalTickets: number;
   openTickets: number;
@@ -341,4 +343,29 @@ export class TicketService {
       'CRITIQUE'
     ];
   }
+
+  /**
+   * Upload files and attach them to an existing ticket
+   */
+  uploadFilesToTicket(ticketId: string, files: File[]): Observable<TicketResponse> {
+    console.log('📤 Uploading files to ticket:', ticketId, files);
+
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    });
+
+    return this.http.post<TicketResponse>(`${this.TICKET_API_URL}/${ticketId}/files`, formData, {
+      headers
+    }).pipe(
+      tap(response => console.log('✅ Files uploaded to ticket:', response)),
+      catchError(this.handleError('uploadFilesToTicket'))
+    );
+  }
+
+
 }

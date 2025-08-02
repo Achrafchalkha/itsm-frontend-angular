@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
@@ -50,6 +50,48 @@ export interface TechnicianResponse {
   actif: boolean;
 }
 
+export interface TechnicianTicketResponse {
+  id: string;
+  titre: string;
+  description: string;
+  statut: string;
+  priorite: string;
+  categorie: string;
+  utilisateurId: string;
+  technicienId: string;
+  teamId?: string;
+  enableNlp: boolean;
+  dateCreation: string;
+  dateModification: string;
+  fichiersAttaches?: string;
+  dateLimiteSla?: string;
+  datePremiereReponse?: string;
+  dateFermeture?: string;
+  commentaireResolution?: string;
+  tempsPremiereReponseMinutes?: number;
+  tempsResolutionMinutes?: number;
+  slaRespecte?: boolean;
+  statutSla?: string;
+  nombreReassignations?: number;
+}
+
+export interface ResolveTicketRequest {
+  solution: string;
+}
+
+export interface RequestReassignmentRequest {
+  reason: string;
+}
+
+export interface TechnicianDashboardStats {
+  totalAssigned: number;
+  openTickets: number;
+  inProgress: number;
+  resolved: number;
+  highPriority: number;
+  avgResolutionTime: number;
+}
+
 export interface CreateTechnicianResponse {
   technicianId: string;
   email: string;
@@ -74,6 +116,7 @@ export interface TechnicianStats {
 })
 export class TechnicianService {
   private readonly API_URL = 'http://localhost:8082/api/manager/technicians';
+  private readonly TICKET_API_URL = 'http://localhost:8083/api';
 
   constructor(
     private http: HttpClient,
@@ -264,5 +307,166 @@ export class TechnicianService {
       'SENIOR': 'bg-red-500/20 text-red-300'
     };
     return colors[niveau] || 'bg-gray-500/20 text-gray-300';
+  }
+
+  // ==================== TICKET MANAGEMENT METHODS ====================
+
+  /**
+   * Get all tickets assigned to current technician
+   */
+  getMyAssignedTickets(page: number = 0, size: number = 20, sortBy: string = 'assignedAt', sortDir: string = 'desc'): Observable<TechnicianTicketResponse[]> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString())
+      .set('sortBy', sortBy)
+      .set('sortDir', sortDir);
+
+    return this.http.get<TechnicianTicketResponse[]>(`${this.TICKET_API_URL}/technician/my-tickets`, {
+      params,
+      headers: this.getHeaders()
+    }).pipe(
+      tap(tickets => console.log('🎫 Fetched assigned tickets:', tickets)),
+      catchError(this.handleError('getMyAssignedTickets'))
+    );
+  }
+
+  /**
+   * Get tickets by status for current technician
+   */
+  getMyTicketsByStatus(status: string): Observable<TechnicianTicketResponse[]> {
+    return this.http.get<TechnicianTicketResponse[]>(`${this.TICKET_API_URL}/technician/my-tickets/status/${status}`, {
+      headers: this.getHeaders()
+    }).pipe(
+      tap(tickets => console.log(`🎫 Fetched tickets with status ${status}:`, tickets)),
+      catchError(this.handleError('getMyTicketsByStatus'))
+    );
+  }
+
+  /**
+   * Start working on a ticket (change status to EN_COURS)
+   */
+  startWorkingOnTicket(ticketId: string): Observable<TechnicianTicketResponse> {
+    return this.http.put<TechnicianTicketResponse>(`${this.TICKET_API_URL}/technician/tickets/${ticketId}/start`, {}, {
+      headers: this.getHeaders()
+    }).pipe(
+      tap(ticket => console.log('🚀 Started working on ticket:', ticket)),
+      catchError(this.handleError('startWorkingOnTicket'))
+    );
+  }
+
+  /**
+   * Resolve a ticket with solution
+   */
+  resolveTicket(ticketId: string, solution: string): Observable<TechnicianTicketResponse> {
+    const request: ResolveTicketRequest = { solution };
+    return this.http.put<TechnicianTicketResponse>(`${this.TICKET_API_URL}/technician/tickets/${ticketId}/resolve`, request, {
+      headers: this.getHeaders()
+    }).pipe(
+      tap(ticket => console.log('✅ Resolved ticket:', ticket)),
+      catchError(this.handleError('resolveTicket'))
+    );
+  }
+
+  /**
+   * Request reassignment of a ticket
+   */
+  requestReassignment(ticketId: string, reason: string): Observable<void> {
+    const request: RequestReassignmentRequest = { reason };
+    return this.http.put<void>(`${this.TICKET_API_URL}/technician/tickets/${ticketId}/request-reassignment`, request, {
+      headers: this.getHeaders()
+    }).pipe(
+      tap(() => console.log('🔄 Requested reassignment for ticket:', ticketId)),
+      catchError(this.handleError('requestReassignment'))
+    );
+  }
+
+  /**
+   * Get technician dashboard statistics
+   */
+  getDashboardStats(): Observable<TechnicianDashboardStats> {
+    return this.http.get<TechnicianDashboardStats>(`${this.TICKET_API_URL}/technician/dashboard`, {
+      headers: this.getHeaders()
+    }).pipe(
+      tap(stats => console.log('📊 Dashboard stats:', stats)),
+      catchError(this.handleError('getDashboardStats'))
+    );
+  }
+
+  /**
+   * Debug endpoint to check all tickets
+   */
+  debugAllTickets(): Observable<string> {
+    return this.http.get(`${this.TICKET_API_URL}/technician/debug/all-tickets`, {
+      responseType: 'text',
+      headers: this.getHeaders()
+    }).pipe(
+      tap(debug => console.log('🐛 Debug info:', debug)),
+      catchError(this.handleError('debugAllTickets'))
+    );
+  }
+
+  // ==================== UTILITY METHODS FOR TICKETS ====================
+
+  /**
+   * Format status for display
+   */
+  formatStatus(status: string): { label: string; color: string } {
+    const statusMap: { [key: string]: { label: string; color: string } } = {
+      'NOUVEAU': { label: 'Nouveau', color: 'bg-gray-500/20 text-gray-400' },
+      'OUVERT': { label: 'Ouvert', color: 'bg-blue-500/20 text-blue-400' },
+      'EN_COURS': { label: 'En Cours', color: 'bg-orange-500/20 text-orange-400' },
+      'EN_ATTENTE': { label: 'En Attente', color: 'bg-yellow-500/20 text-yellow-400' },
+      'RESOLU': { label: 'Résolu', color: 'bg-green-500/20 text-green-400' },
+      'FERME': { label: 'Fermé', color: 'bg-slate-500/20 text-slate-400' }
+    };
+    return statusMap[status] || { label: status, color: 'bg-gray-500/20 text-gray-400' };
+  }
+
+  /**
+   * Format priority for display
+   */
+  formatPriority(priority: string): { label: string; color: string } {
+    const priorityMap: { [key: string]: { label: string; color: string } } = {
+      'BASSE': { label: 'Basse', color: 'bg-green-500/20 text-green-400' },
+      'NORMALE': { label: 'Normale', color: 'bg-blue-500/20 text-blue-400' },
+      'HAUTE': { label: 'Haute', color: 'bg-orange-500/20 text-orange-400' },
+      'CRITIQUE': { label: 'Critique', color: 'bg-red-500/20 text-red-400' }
+    };
+    return priorityMap[priority] || { label: priority, color: 'bg-gray-500/20 text-gray-400' };
+  }
+
+  /**
+   * Format date for display
+   */
+  formatTicketDate(dateString: string): string {
+    if (!dateString) return '';
+
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return `Il y a ${diffMinutes} min`;
+    } else if (diffHours < 24) {
+      return `Il y a ${diffHours}h`;
+    } else if (diffDays < 7) {
+      return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+    } else {
+      return date.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+  }
+
+  /**
+   * Get ticket ID display format
+   */
+  getTicketDisplayId(ticket: TechnicianTicketResponse): string {
+    return `#TK-${ticket.id.substring(0, 8).toUpperCase()}`;
   }
 }

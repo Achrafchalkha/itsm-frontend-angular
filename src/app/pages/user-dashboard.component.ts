@@ -284,23 +284,55 @@ import { FileUploadService, AttachedFile, FileUploadResponse } from '../core/ser
     <!-- My Tickets Template -->
     <ng-template #myTicketsTemplate>
       <div class="space-y-6">
+        <!-- Header with Stats -->
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <h3 class="text-xl font-bold text-white mb-4">Mes Tickets</h3>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-slate-700 rounded-lg p-4">
+              <div class="text-2xl font-bold text-white">{{ userTickets.length }}</div>
+              <div class="text-sm text-slate-400">Total</div>
+            </div>
+            <div class="bg-slate-700 rounded-lg p-4">
+              <div class="text-2xl font-bold text-yellow-400">{{ getTicketsByStatus('EN_COURS').length }}</div>
+              <div class="text-sm text-slate-400">En cours</div>
+            </div>
+            <div class="bg-slate-700 rounded-lg p-4">
+              <div class="text-2xl font-bold text-green-400">{{ getTicketsByStatus('FERME').length }}</div>
+              <div class="text-sm text-slate-400">Fermés</div>
+            </div>
+            <div class="bg-slate-700 rounded-lg p-4">
+              <div class="text-2xl font-bold text-blue-400">{{ getTicketsByStatus('OUVERT').length }}</div>
+              <div class="text-sm text-slate-400">Ouverts</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Filters -->
         <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <div class="flex flex-col sm:flex-row gap-4">
             <div class="flex-1">
               <input
                 type="text"
+                [(ngModel)]="searchTerm"
+                (input)="filterTickets()"
                 placeholder="Rechercher un ticket..."
                 class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
             </div>
-            <select class="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <select
+              [(ngModel)]="statusFilter"
+              (change)="filterTickets()"
+              class="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
               <option value="">Tous les statuts</option>
               <option value="OUVERT">Ouvert</option>
               <option value="EN_COURS">En cours</option>
               <option value="FERME">Fermé</option>
+              <option value="ANNULE">Annulé</option>
             </select>
-            <select class="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <select
+              [(ngModel)]="priorityFilter"
+              (change)="filterTickets()"
+              class="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
               <option value="">Toutes les priorités</option>
               <option value="BASSE">Basse</option>
               <option value="MOYENNE">Moyenne</option>
@@ -310,89 +342,322 @@ import { FileUploadService, AttachedFile, FileUploadResponse } from '../core/ser
           </div>
         </div>
 
-        <!-- Tickets List -->
-        <div class="space-y-4">
-          <!-- Sample Ticket 1 -->
-          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-slate-600 transition-colors">
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center space-x-3 mb-2">
-                  <h3 class="text-lg font-semibold text-white">#TICK-001 - Problème de connexion réseau</h3>
-                  <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-medium">EN_COURS</span>
-                  <span class="px-2 py-1 bg-orange-500/20 text-orange-400 rounded-full text-xs font-medium">HAUTE</span>
-                </div>
-                <p class="text-slate-400 mb-3">Impossible de se connecter au réseau depuis ce matin...</p>
-                <div class="flex items-center space-x-4 text-sm text-slate-500">
-                  <span>Créé le: 15/01/2025</span>
-                  <span>Assigné à: Jean Dupont</span>
-                  <span>Catégorie: Réseau</span>
-                </div>
-              </div>
-              <div class="flex space-x-2">
-                <button class="text-blue-400 hover:text-blue-300 p-2 rounded-lg hover:bg-slate-700 transition-colors" title="Voir détails">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                  </svg>
-                </button>
-                <button class="text-emerald-400 hover:text-emerald-300 p-2 rounded-lg hover:bg-slate-700 transition-colors" title="Ajouter commentaire">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                  </svg>
-                </button>
-                <button class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-slate-700 transition-colors" title="Supprimer">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                  </svg>
-                </button>
-              </div>
+        <!-- Loading State -->
+        <div *ngIf="loading" class="bg-slate-800 rounded-xl p-8 border border-slate-700 text-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+          <p class="text-slate-400">Chargement de vos tickets...</p>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="error && !loading" class="bg-red-900/20 border border-red-500/30 rounded-xl p-6">
+          <div class="flex items-center space-x-3">
+            <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+              <h3 class="text-red-400 font-medium">Erreur de chargement</h3>
+              <p class="text-red-300 text-sm">{{ error }}</p>
             </div>
           </div>
+        </div>
 
-          <!-- Sample Ticket 2 -->
-          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-slate-600 transition-colors">
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center space-x-3 mb-2">
-                  <h3 class="text-lg font-semibold text-white">#TICK-002 - Demande d'installation logiciel</h3>
-                  <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">FERME</span>
-                  <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium">MOYENNE</span>
+        <!-- Tickets List -->
+        <div *ngIf="!loading && !error" class="space-y-6">
+          <div *ngFor="let ticket of filteredTickets; trackBy: trackByTicketId" class="bg-slate-800 rounded-xl border border-slate-700 hover:border-slate-600 transition-all duration-200 overflow-hidden shadow-lg">
+
+            <!-- Ticket Header -->
+            <div class="p-6 border-b border-slate-700">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <!-- Title and Badges -->
+                  <div class="flex items-center space-x-3 mb-4">
+                    <h3 class="text-xl font-bold text-white">
+                      <span class="text-emerald-400">#{{ ticket.id.substring(0, 8) }}</span> - {{ ticket.titre }}
+                    </h3>
+                    <span [class]="getStatusBadgeClass(ticket.statut)" class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+                      {{ getStatusLabel(ticket.statut) }}
+                    </span>
+                    <span [class]="getPriorityBadgeClass(ticket.priorite)" class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+                      {{ getPriorityLabel(ticket.priorite) }}
+                    </span>
+                  </div>
+
+                  <!-- Description Preview -->
+                  <p class="text-slate-300 mb-4 leading-relaxed">{{ ticket.description | slice:0:150 }}{{ ticket.description.length > 150 ? '...' : '' }}</p>
+
+                  <!-- Key Information Grid -->
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- Creation Date -->
+                    <div class="bg-slate-700/50 rounded-lg p-3">
+                      <div class="flex items-center space-x-2 mb-1">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wide">Créé le</span>
+                      </div>
+                      <p class="text-sm font-semibold text-white">{{ formatDate(ticket.dateCreation) }}</p>
+                      <p class="text-xs text-slate-400">{{ formatTime(ticket.dateCreation) }}</p>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="bg-slate-700/50 rounded-lg p-3">
+                      <div class="flex items-center space-x-2 mb-1">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wide">Catégorie</span>
+                      </div>
+                      <p class="text-sm font-semibold text-white">{{ ticket.categorie || 'Non classé' }}</p>
+                    </div>
+
+                    <!-- Last Modified -->
+                    <div class="bg-slate-700/50 rounded-lg p-3">
+                      <div class="flex items-center space-x-2 mb-1">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wide">Modifié le</span>
+                      </div>
+                      <p class="text-sm font-semibold text-white">{{ formatDate(ticket.dateModification) }}</p>
+                      <p class="text-xs text-slate-400">{{ formatTime(ticket.dateModification) }}</p>
+                    </div>
+
+                    <!-- Attachments -->
+                    <div class="bg-slate-700/50 rounded-lg p-3">
+                      <div class="flex items-center space-x-2 mb-1">
+                        <svg class="w-4 h-4" [class]="hasAttachedFiles(ticket) ? 'text-orange-400' : 'text-slate-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                        </svg>
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wide">Fichiers</span>
+                      </div>
+                      <p class="text-sm font-semibold" [class]="hasAttachedFiles(ticket) ? 'text-white' : 'text-slate-500'">{{ getAttachedFiles(ticket).length }}</p>
+                      <p class="text-xs" [class]="hasAttachedFiles(ticket) ? 'text-slate-400' : 'text-slate-500'">{{ getAttachedFiles(ticket).length === 1 ? 'fichier' : 'fichiers' }}</p>
+                    </div>
+                  </div>
                 </div>
-                <p class="text-slate-400 mb-3">Installation de Microsoft Office sur mon poste de travail</p>
-                <div class="flex items-center space-x-4 text-sm text-slate-500">
-                  <span>Créé le: 12/01/2025</span>
-                  <span>Résolu par: Marie Martin</span>
-                  <span>Catégorie: Logiciel</span>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col space-y-2 ml-6">
+                  <button
+                    (click)="toggleTicketDetails(ticket)"
+                    [class]="selectedTicket?.id === ticket.id ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+                    class="px-4 py-2 rounded-lg transition-colors font-medium text-sm"
+                    [title]="selectedTicket?.id === ticket.id ? 'Masquer détails' : 'Voir détails'"
+                  >
+                    {{ selectedTicket?.id === ticket.id ? 'Masquer' : 'Détails' }}
+                  </button>
+
+                  <button
+                    (click)="deleteTicket(ticket)"
+                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium text-sm"
+                    title="Supprimer le ticket"
+                  >
+                    Supprimer
+                  </button>
+
+                  <button
+                    *ngIf="ticket.statut === 'FERME'"
+                    (click)="evaluateTicket(ticket)"
+                    class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors font-medium text-sm"
+                    title="Évaluer"
+                  >
+                    Évaluer
+                  </button>
                 </div>
               </div>
-              <div class="flex space-x-2">
-                <button class="text-blue-400 hover:text-blue-300 p-2 rounded-lg hover:bg-slate-700 transition-colors" title="Voir détails">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                  </svg>
-                </button>
-                <button class="text-yellow-400 hover:text-yellow-300 p-2 rounded-lg hover:bg-slate-700 transition-colors" title="Évaluer">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-                  </svg>
-                </button>
+            </div>
+
+            <!-- Expanded Details Section -->
+            <div *ngIf="selectedTicket?.id === ticket.id" class="bg-slate-900/50">
+              <div class="p-6 space-y-6">
+
+                <!-- Complete Information Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                  <!-- Left Column: Description & Timeline -->
+                  <div class="space-y-6">
+                    <!-- Full Description -->
+                    <div>
+                      <h4 class="text-lg font-semibold text-white mb-3 flex items-center">
+                        <svg class="w-5 h-5 text-emerald-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Description complète
+                      </h4>
+                      <div class="bg-slate-800 rounded-lg p-4 border border-slate-600">
+                        <p class="text-slate-200 leading-relaxed whitespace-pre-wrap">{{ ticket.description }}</p>
+                      </div>
+                    </div>
+
+                    <!-- Timeline -->
+                    <div>
+                      <h4 class="text-lg font-semibold text-white mb-3 flex items-center">
+                        <svg class="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Chronologie
+                      </h4>
+                      <div class="space-y-4">
+                        <!-- Creation -->
+                        <div class="flex items-start space-x-4">
+                          <div class="w-3 h-3 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                              <h5 class="font-medium text-white">Ticket créé</h5>
+                              <span class="text-sm text-slate-400">{{ formatDateTime(ticket.dateCreation) }}</span>
+                            </div>
+                            <p class="text-sm text-slate-400">Demande soumise par l'utilisateur</p>
+                          </div>
+                        </div>
+
+                        <!-- Last Modification -->
+                        <div *ngIf="ticket.dateModification !== ticket.dateCreation" class="flex items-start space-x-4">
+                          <div class="w-3 h-3 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                              <h5 class="font-medium text-white">Dernière modification</h5>
+                              <span class="text-sm text-slate-400">{{ formatDateTime(ticket.dateModification) }}</span>
+                            </div>
+                            <p class="text-sm text-slate-400">Ticket mis à jour</p>
+                          </div>
+                        </div>
+
+                        <!-- Closure -->
+                        <div *ngIf="ticket.dateFermeture" class="flex items-start space-x-4">
+                          <div class="w-3 h-3 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                              <h5 class="font-medium text-white">Ticket fermé</h5>
+                              <span class="text-sm text-slate-400">{{ formatDateTime(ticket.dateFermeture) }}</span>
+                            </div>
+                            <p class="text-sm text-slate-400">Demande résolue et fermée</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Right Column: Technical Details & Files -->
+                  <div class="space-y-6">
+                    <!-- Ticket Summary -->
+                    <div>
+                      <h4 class="text-lg font-semibold text-white mb-3 flex items-center">
+                        <svg class="w-5 h-5 text-emerald-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                        Résumé du ticket
+                      </h4>
+                      <div class="bg-slate-800 rounded-lg p-4 border border-slate-600 space-y-3">
+                        <div class="grid grid-cols-1 gap-4">
+                          <div class="flex justify-between items-center">
+                            <span class="text-slate-400 font-medium">Statut:</span>
+                            <span [class]="getStatusBadgeClass(ticket.statut)" class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+                              {{ getStatusLabel(ticket.statut) }}
+                            </span>
+                          </div>
+                          <div class="flex justify-between items-center">
+                            <span class="text-slate-400 font-medium">Priorité:</span>
+                            <span [class]="getPriorityBadgeClass(ticket.priorite)" class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+                              {{ getPriorityLabel(ticket.priorite) }}
+                            </span>
+                          </div>
+                          <div class="flex justify-between items-center">
+                            <span class="text-slate-400 font-medium">Catégorie:</span>
+                            <span class="text-slate-200 font-medium">{{ ticket.categorie || 'Non classé' }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- File Attachments - Only show if there are files -->
+                    <div *ngIf="hasAttachedFiles(ticket)">
+                      <h4 class="text-lg font-semibold text-white mb-3 flex items-center">
+                        <svg class="w-5 h-5 text-orange-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                        </svg>
+                        Fichiers attachés ({{ getAttachedFiles(ticket).length }})
+                      </h4>
+
+                      <div class="space-y-3">
+                        <div *ngFor="let file of getAttachedFiles(ticket)"
+                             class="bg-slate-800 rounded-lg p-4 border border-slate-600 hover:border-slate-500 transition-all duration-200 cursor-pointer group"
+                             (click)="downloadFile(file)">
+                          <div class="flex items-center space-x-4">
+                            <!-- File Icon -->
+                            <div class="flex-shrink-0">
+                              <div class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center group-hover:bg-slate-600 transition-colors">
+                                <svg *ngIf="isImageFile(file)" class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <svg *ngIf="!isImageFile(file)" class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                              </div>
+                            </div>
+
+                            <!-- File Info -->
+                            <div class="flex-1 min-w-0">
+                              <h5 class="font-medium text-white truncate group-hover:text-emerald-400 transition-colors">
+                                {{ getFileDisplayName(file) }}
+                              </h5>
+                              <div class="flex items-center space-x-4 mt-1">
+                                <span class="text-sm text-slate-400">{{ formatFileSize(file.size) }}</span>
+                                <span *ngIf="file.mimeType" class="text-sm text-slate-400">{{ file.mimeType }}</span>
+                                <span *ngIf="file.uploadDate" class="text-sm text-slate-400">{{ formatDate(file.uploadDate) }}</span>
+                              </div>
+                            </div>
+
+                            <!-- Download Icon -->
+                            <div class="flex-shrink-0">
+                              <div class="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center group-hover:bg-emerald-500 transition-colors">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- No Files Message - Only show when expanded and no files -->
+                    <div *ngIf="!hasAttachedFiles(ticket)" class="bg-slate-800 rounded-lg p-6 border border-slate-600 text-center">
+                      <svg class="w-12 h-12 mx-auto text-slate-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                      </svg>
+                      <p class="text-slate-400 font-medium">Aucun fichier attaché</p>
+                      <p class="text-slate-500 text-sm mt-1">Ce ticket ne contient pas de fichiers joints</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Empty State -->
-          <div class="text-center py-12 text-slate-400" style="display: none;">
+          <div *ngIf="filteredTickets.length === 0" class="text-center py-12 text-slate-400">
             <svg class="w-16 h-16 mx-auto mb-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
             </svg>
-            <h3 class="text-lg font-medium text-slate-300 mb-2">Aucun ticket trouvé</h3>
-            <p class="text-slate-400">Vous n'avez pas encore créé de tickets</p>
+            <h3 class="text-lg font-medium text-slate-300 mb-2">
+              {{ userTickets.length === 0 ? 'Aucun ticket trouvé' : 'Aucun ticket ne correspond aux filtres' }}
+            </h3>
+            <p class="text-slate-400">
+              {{ userTickets.length === 0 ? 'Vous n\'avez pas encore créé de tickets' : 'Essayez de modifier vos critères de recherche' }}
+            </p>
             <button
+              *ngIf="userTickets.length === 0"
               (click)="setActiveSection('create-ticket')"
               class="mt-4 bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg text-white font-medium transition-colors"
             >
               Créer votre premier ticket
+            </button>
+            <button
+              *ngIf="userTickets.length > 0"
+              (click)="clearFilters()"
+              class="mt-4 bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg text-white font-medium transition-colors"
+            >
+              Effacer les filtres
             </button>
           </div>
         </div>
@@ -848,6 +1113,9 @@ export class UserDashboardComponent implements OnInit {
   uploadingFiles = false;
   dragOver = false;
 
+  // Ticket details
+  selectedTicket: TicketResponse | null = null;
+
   constructor(
     private authService: AuthService,
     private router: Router,
@@ -1127,12 +1395,7 @@ export class UserDashboardComponent implements OnInit {
     return this.fileUploadService.getFileIcon(mimeType);
   }
 
-  /**
-   * Format file size
-   */
-  formatFileSize(bytes: number): string {
-    return this.fileUploadService.formatFileSize(bytes);
-  }
+
 
   /**
    * Temporary method to avoid compilation error
@@ -1220,5 +1483,410 @@ export class UserDashboardComponent implements OnInit {
       const control = formGroup.get(key);
       control?.markAsTouched();
     });
+  }
+
+  // ==================== TICKET DISPLAY METHODS ====================
+
+  /**
+   * Filter tickets based on search and filter criteria
+   */
+  filterTickets(): void {
+    this.filteredTickets = this.userTickets.filter(ticket => {
+      const matchesSearch = !this.searchTerm ||
+        ticket.titre.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        ticket.description.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        ticket.id.toLowerCase().includes(this.searchTerm.toLowerCase());
+
+      const matchesStatus = !this.statusFilter || ticket.statut === this.statusFilter;
+      const matchesPriority = !this.priorityFilter || ticket.priorite === this.priorityFilter;
+
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+  }
+
+  /**
+   * Clear all filters
+   */
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.statusFilter = '';
+    this.priorityFilter = '';
+    this.filterTickets();
+  }
+
+  /**
+   * Get tickets by status
+   */
+  getTicketsByStatus(status: string): TicketResponse[] {
+    return this.userTickets.filter(ticket => ticket.statut === status);
+  }
+
+  /**
+   * Toggle ticket details view
+   */
+  toggleTicketDetails(ticket: TicketResponse): void {
+    if (this.selectedTicket?.id === ticket.id) {
+      this.selectedTicket = null;
+    } else {
+      this.selectedTicket = ticket;
+    }
+  }
+
+  /**
+   * Track by function for ngFor
+   */
+  trackByTicketId(index: number, ticket: TicketResponse): string {
+    return ticket.id;
+  }
+
+  /**
+   * Get status badge CSS class
+   */
+  getStatusBadgeClass(status: string): string {
+    const classes = {
+      'OUVERT': 'bg-blue-500/20 text-blue-400',
+      'EN_COURS': 'bg-yellow-500/20 text-yellow-400',
+      'FERME': 'bg-green-500/20 text-green-400',
+      'ANNULE': 'bg-red-500/20 text-red-400'
+    };
+    return classes[status as keyof typeof classes] || 'bg-slate-500/20 text-slate-400';
+  }
+
+  /**
+   * Get priority badge CSS class
+   */
+  getPriorityBadgeClass(priority: string): string {
+    const classes = {
+      'BASSE': 'bg-slate-500/20 text-slate-400',
+      'MOYENNE': 'bg-blue-500/20 text-blue-400',
+      'HAUTE': 'bg-orange-500/20 text-orange-400',
+      'CRITIQUE': 'bg-red-500/20 text-red-400'
+    };
+    return classes[priority as keyof typeof classes] || 'bg-slate-500/20 text-slate-400';
+  }
+
+  /**
+   * Get status label
+   */
+  getStatusLabel(status: string): string {
+    const labels = {
+      'OUVERT': 'Ouvert',
+      'EN_COURS': 'En cours',
+      'FERME': 'Fermé',
+      'ANNULE': 'Annulé'
+    };
+    return labels[status as keyof typeof labels] || status;
+  }
+
+  /**
+   * Get priority label
+   */
+  getPriorityLabel(priority: string): string {
+    const labels = {
+      'BASSE': 'Basse',
+      'MOYENNE': 'Moyenne',
+      'HAUTE': 'Haute',
+      'CRITIQUE': 'Critique'
+    };
+    return labels[priority as keyof typeof labels] || priority;
+  }
+
+  /**
+   * Format date for display
+   */
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  }
+
+  /**
+   * Format date and time for display
+   */
+  formatDateTime(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  /**
+   * Format time only for display
+   */
+  formatTime(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  /**
+   * Format file size for display
+   */
+  formatFileSize(bytes: number): string {
+    if (!bytes) return '0 B';
+
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  // ==================== FILE ATTACHMENT METHODS ====================
+
+  /**
+   * Check if ticket has attached files
+   */
+  hasAttachedFiles(ticket: TicketResponse): boolean {
+    return this.getAttachedFiles(ticket).length > 0;
+  }
+
+  /**
+   * Get attached files from ticket
+   */
+  getAttachedFiles(ticket: TicketResponse): any[] {
+    if (!ticket.fichiersAttaches) {
+      console.log('📎 No fichiersAttaches field in ticket:', ticket.id);
+      return [];
+    }
+
+    console.log('📎 Raw fichiersAttaches data for ticket', ticket.id, ':', ticket.fichiersAttaches);
+    console.log('📎 Type of fichiersAttaches:', typeof ticket.fichiersAttaches);
+
+    try {
+      const files = JSON.parse(ticket.fichiersAttaches);
+      console.log('📎 Parsed files:', files);
+      console.log('📎 Number of files:', Array.isArray(files) ? files.length : 'Not an array');
+
+      if (Array.isArray(files)) {
+        files.forEach((file, index) => {
+          console.log(`📎 File ${index}:`, {
+            fileName: file.fileName,
+            originalName: file.originalName,
+            name: file.name,
+            size: file.size,
+            mimeType: file.mimeType,
+            uploadDate: file.uploadDate,
+            fullObject: file
+          });
+        });
+      }
+
+      return Array.isArray(files) ? files : [];
+    } catch (error) {
+      console.error('❌ Error parsing attached files:', error);
+      console.log('📎 Raw data that failed to parse:', ticket.fichiersAttaches);
+      return [];
+    }
+  }
+
+  /**
+   * Check if file is an image
+   */
+  isImageFile(file: any): boolean {
+    const fileName = file.originalName || file.fileName || file.name;
+    if (!fileName) return false;
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+    return imageExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
+  }
+
+  /**
+   * Get display name for file (what user sees)
+   */
+  getFileDisplayName(file: any): string {
+    return file.originalName || file.fileName || file.name || 'Fichier sans nom';
+  }
+
+  /**
+   * Get actual filename for download (from backend storage)
+   */
+  getActualFileName(file: any): string | null {
+    if (file.filePath) {
+      const pathParts = file.filePath.split('/');
+      return pathParts[pathParts.length - 1];
+    }
+    return file.fileName || file.name || null;
+  }
+
+  /**
+   * Download file attachment
+   */
+  downloadFile(file: any): void {
+    console.log('📥 Downloading file - Full object:', file);
+
+    // Debug: Log all possible filename properties
+    console.log('📥 File properties:', {
+      fileName: file.fileName,
+      originalName: file.originalName,
+      name: file.name,
+      url: file.url,
+      size: file.size,
+      mimeType: file.mimeType,
+      filePath: file.filePath
+    });
+
+    // Get the actual filename for download (from backend storage path)
+    const fileName = this.getActualFileName(file);
+    if (!fileName) {
+      console.error('❌ No filename found in file object:', file);
+      alert('Erreur: Nom de fichier introuvable dans les données du fichier');
+      return;
+    }
+
+    console.log('📥 Using filename for download:', fileName);
+
+    console.log('📥 Attempting to download file with filename:', fileName);
+
+    // Get the JWT token for authentication
+    const token = this.authService.getToken();
+    if (!token) {
+      console.error('❌ No authentication token found');
+      alert('Erreur: Vous devez être connecté pour télécharger des fichiers');
+      return;
+    }
+
+    // Create download URL for the file
+    const downloadUrl = `http://localhost:8083/api/tickets/files/${encodeURIComponent(fileName)}`;
+    console.log('📥 Download URL:', downloadUrl);
+
+    // Show loading indicator
+    const originalText = 'Téléchargement en cours...';
+    console.log('📥', originalText);
+
+    // Use fetch with proper authentication headers
+    fetch(downloadUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+        // Remove Content-Type header for file downloads
+      }
+    })
+    .then(response => {
+      console.log('📥 Response status:', response.status);
+      console.log('📥 Response ok:', response.ok);
+      console.log('📥 Response statusText:', response.statusText);
+
+      if (!response.ok) {
+        // Handle specific error cases
+        if (response.status === 404) {
+          throw new Error(`Fichier non trouvé sur le serveur. Le fichier "${fileName}" n'existe peut-être plus.`);
+        } else if (response.status === 403) {
+          throw new Error(`Accès refusé. Vous n'avez pas les permissions pour télécharger ce fichier.`);
+        } else if (response.status === 401) {
+          throw new Error(`Session expirée. Veuillez vous reconnecter.`);
+        } else {
+          // Get more detailed error information
+          return response.text().then(errorText => {
+            console.error('❌ Server response:', errorText);
+            throw new Error(`Erreur serveur (${response.status}): ${response.statusText}`);
+          });
+        }
+      }
+      return response.blob();
+    })
+    .then(blob => {
+      console.log('📥 Blob received, size:', blob.size, 'type:', blob.type);
+
+      if (blob.size === 0) {
+        throw new Error('Le fichier téléchargé est vide');
+      }
+
+      // Create a temporary URL for the blob
+      const url = window.URL.createObjectURL(blob);
+
+      // Create a temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = this.getFileDisplayName(file); // Use display name for download
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log('✅ File downloaded successfully:', this.getFileDisplayName(file));
+    })
+    .catch(error => {
+      console.error('❌ Error downloading file:', error);
+      alert(`Erreur lors du téléchargement du fichier:\n${error.message}`);
+    });
+  }
+
+  // ==================== TICKET ACTION METHODS ====================
+
+  /**
+   * Delete ticket with confirmation
+   */
+  deleteTicket(ticket: TicketResponse): void {
+    console.log('🗑️ Attempting to delete ticket:', ticket.id);
+
+    // Show confirmation dialog
+    const confirmMessage = `Êtes-vous sûr de vouloir supprimer le ticket "${ticket.titre}" ?\n\nCette action est irréversible.`;
+
+    if (confirm(confirmMessage)) {
+      console.log('🗑️ User confirmed deletion for ticket:', ticket.id);
+
+      // Show loading state
+      this.loading = true;
+
+      // Call the ticket service to delete
+      this.ticketService.deleteTicket(ticket.id).subscribe({
+        next: () => {
+          console.log('✅ Ticket deleted successfully:', ticket.id);
+
+          // Remove the ticket from the local arrays
+          this.userTickets = this.userTickets.filter(t => t.id !== ticket.id);
+          this.filteredTickets = this.filteredTickets.filter(t => t.id !== ticket.id);
+
+          // Close expanded details if this ticket was selected
+          if (this.selectedTicket?.id === ticket.id) {
+            this.selectedTicket = null;
+          }
+
+          // Show success message
+          alert('Ticket supprimé avec succès !');
+
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('❌ Error deleting ticket:', error);
+
+          let errorMessage = 'Erreur lors de la suppression du ticket.';
+
+          if (error.status === 403) {
+            errorMessage = 'Vous n\'avez pas les permissions pour supprimer ce ticket.';
+          } else if (error.status === 404) {
+            errorMessage = 'Ticket non trouvé.';
+          } else if (error.error?.message) {
+            errorMessage = error.error.message;
+          }
+
+          alert(`Erreur: ${errorMessage}`);
+          this.loading = false;
+        }
+      });
+    } else {
+      console.log('🚫 User cancelled ticket deletion');
+    }
+  }
+
+  /**
+   * Evaluate ticket
+   */
+  evaluateTicket(ticket: TicketResponse): void {
+    console.log('⭐ Evaluating ticket:', ticket.id);
+    // Switch to evaluations section and pre-select the ticket
+    this.setActiveSection('evaluations');
+    // You could add logic here to pre-select the ticket in the evaluation form
   }
 }
