@@ -83,6 +83,27 @@ export interface RequestReassignmentRequest {
   reason: string;
 }
 
+export interface AddNoteRequest {
+  note: string;
+}
+
+export interface TechnicianProfile {
+  id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  role: string;
+  teamId: string;
+  localisation: string;
+  telephone: string;
+  specialite: string;
+  competencesJson: string;
+  chargeActuelle: number;
+  dateCreation: string;
+  dateModification: string;
+  actif: boolean;
+}
+
 export interface TechnicianDashboardStats {
   totalAssigned: number;
   openTickets: number;
@@ -117,6 +138,7 @@ export interface TechnicianStats {
 export class TechnicianService {
   private readonly API_URL = 'http://localhost:8082/api/manager/technicians';
   private readonly TICKET_API_URL = 'http://localhost:8083/api';
+  private readonly USER_API_URL = 'http://localhost:8082/api';
 
   constructor(
     private http: HttpClient,
@@ -377,6 +399,58 @@ export class TechnicianService {
     }).pipe(
       tap(() => console.log('🔄 Requested reassignment for ticket:', ticketId)),
       catchError(this.handleError('requestReassignment'))
+    );
+  }
+
+  /**
+   * Add a technical note to a ticket
+   */
+  addTechnicalNote(ticketId: string, note: string): Observable<any> {
+    const request: AddNoteRequest = { note };
+    return this.http.post<any>(`${this.TICKET_API_URL}/technician/tickets/${ticketId}/notes`, request, {
+      headers: this.getHeaders()
+    }).pipe(
+      tap(response => console.log('📝 Added technical note to ticket:', ticketId, response)),
+      catchError(this.handleError('addTechnicalNote'))
+    );
+  }
+
+  /**
+   * Get current technician's profile with competences
+   */
+  getMyProfile(): Observable<TechnicianProfile> {
+    return this.http.get<TechnicianProfile>(`${this.USER_API_URL}/technician/profile`, {
+      headers: this.getHeaders()
+    }).pipe(
+      tap(profile => console.log('👤 Retrieved technician profile:', profile)),
+      catchError(this.handleError('getMyProfile'))
+    );
+  }
+
+  /**
+   * Get current technician's detailed profile (alternative endpoint)
+   * Equivalent to manager's GET /technicians/{id} but for self-access
+   */
+  getMyDetailedProfile(): Observable<TechnicianProfile> {
+    return this.http.get<TechnicianProfile>(`${this.USER_API_URL}/technician/me`, {
+      headers: this.getHeaders()
+    }).pipe(
+      tap(profile => console.log('👤 Retrieved detailed technician profile:', profile)),
+      catchError(this.handleError('getMyDetailedProfile'))
+    );
+  }
+
+  /**
+   * Get technician's own profile by ID (same pattern as manager endpoint)
+   * Equivalent to GET /api/manager/technicians/{technicianId} but for technician's own access
+   * URL: GET /api/technician/technicians/{technicianId}
+   */
+  getMyProfileById(technicianId: string): Observable<TechnicianProfile> {
+    return this.http.get<TechnicianProfile>(`${this.USER_API_URL}/technician/technicians/${technicianId}`, {
+      headers: this.getHeaders()
+    }).pipe(
+      tap(profile => console.log('👤 Retrieved technician profile by ID:', profile)),
+      catchError(this.handleError('getMyProfileById'))
     );
   }
 
