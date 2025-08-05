@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
-import { TechnicianService, TechnicianResponse, CreateTechnicianRequest, UpdateTechnicianRequest, Competence, TechnicianStats } from '../core/services/technician.service';
+import { TechnicianService, Competence, TechnicianStats } from '../core/services/technician.service';
+import { TechnicianManagementService, TechnicianResponse, CreateTechnicianRequest, CreateTechnicianResponse, UpdateTechnicianRequest } from '../core/services/technician-management.service';
+import { TeamTicketsService, TeamTicketResponse, TeamTicketsParams } from '../core/services/team-tickets.service';
+import { NotificationService, NotificationDTO } from '../core/services/notification.service';
 
 interface MenuItem {
   id: string;
@@ -126,13 +129,121 @@ interface SubMenuItem {
             </div>
             <div class="flex items-center space-x-4">
               <!-- Notifications -->
-              <button class="relative p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19c-5 0-8-3-8-6s4-6 9-6 9 3 9 6c0 1-1 3-2 3h-1l-1 1z"></path>
-                </svg>
-                <span class="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">3</span>
-              </button>
+              <div class="relative">
+                <button
+                  (click)="toggleNotifications()"
+                  class="relative p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700 transition-colors"
+                  [class.text-blue-400]="showNotifications">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19c-5 0-8-3-8-6s4-6 9-6 9 3 9 6c0 1-1 3-2 3h-1l-1 1z"></path>
+                  </svg>
+                  <span *ngIf="unreadNotificationCount > 0"
+                        class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                    {{ unreadNotificationCount > 99 ? '99+' : unreadNotificationCount }}
+                  </span>
+                </button>
+
+                <!-- Notifications Dropdown -->
+                <div *ngIf="showNotifications"
+                     class="absolute right-0 top-12 w-96 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-50 max-h-96 overflow-hidden">
+
+                  <!-- Header -->
+                  <div class="p-4 border-b border-slate-700 bg-gradient-to-r from-blue-600/10 to-purple-600/10">
+                    <div class="flex items-center justify-between">
+                      <h3 class="text-lg font-semibold text-white">Notifications</h3>
+                      <div class="flex items-center space-x-2">
+                        <span class="text-sm text-slate-400">{{ notifications.length }} total</span>
+                        <button
+                          *ngIf="unreadNotificationCount > 0"
+                          (click)="markAllNotificationsAsRead()"
+                          class="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                          Tout marquer lu
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Loading State -->
+                  <div *ngIf="isLoadingNotifications" class="p-6 text-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                    <p class="text-slate-400 mt-2 text-sm">Chargement des notifications...</p>
+                  </div>
+
+                  <!-- Notifications List -->
+                  <div *ngIf="!isLoadingNotifications" class="max-h-80 overflow-y-auto">
+                    <!-- Empty State -->
+                    <div *ngIf="notifications.length === 0" class="p-6 text-center">
+                      <svg class="w-12 h-12 text-slate-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19c-5 0-8-3-8-6s4-6 9-6 9 3 9 6c0 1-1 3-2 3h-1l-1 1z"></path>
+                      </svg>
+                      <p class="text-slate-400 text-sm">Aucune notification</p>
+                      <p class="text-slate-500 text-xs mt-1">Les nouvelles notifications apparaîtront ici</p>
+                    </div>
+
+                    <!-- Notifications Items -->
+                    <div *ngFor="let notification of notifications; trackBy: trackNotification"
+                         class="p-4 border-b border-slate-700/30 hover:bg-slate-700/30 transition-all duration-200 group relative"
+                         [class]="!notification.readStatus ? 'bg-gradient-to-r from-blue-500/5 to-purple-500/5 border-l-4 border-l-blue-500' : ''">
+
+                      <div class="flex items-start space-x-3">
+                        <!-- Icon -->
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                             [class]="getNotificationColor(notification.priority)">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getNotificationIcon(notification.type)"></path>
+                          </svg>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-start justify-between mb-1">
+                            <h4 class="text-sm font-medium text-white cursor-pointer hover:text-blue-300 transition-colors"
+                                [title]="getCleanNotificationTitle(notification.title)"
+                                (click)="toggleNotificationExpanded(notification.id)">
+                              {{ getCleanNotificationTitle(notification.title) }}
+                            </h4>
+                            <div class="flex items-center space-x-2 ml-2">
+                              <button *ngIf="!notification.readStatus"
+                                      (click)="markNotificationAsRead(notification)"
+                                      class="text-xs text-blue-400 hover:text-blue-300 transition-colors px-2 py-1 rounded bg-blue-500/10 hover:bg-blue-500/20"
+                                      title="Marquer comme lu">
+                                Lue
+                              </button>
+                              <span class="text-xs text-slate-400">{{ getNotificationTime(notification.createdAt) }}</span>
+                              <div *ngIf="!notification.readStatus" class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            </div>
+                          </div>
+
+                          <div class="text-sm text-slate-300 leading-relaxed cursor-pointer"
+                               (click)="toggleNotificationExpanded(notification.id)"
+                               [title]="getCleanNotificationMessage(notification.message)">
+                            <p [class]="isNotificationExpanded(notification.id) ? '' : 'line-clamp-2'">
+                              {{ getCleanNotificationMessage(notification.message) }}
+                            </p>
+                            <span *ngIf="!isNotificationExpanded(notification.id) && getCleanNotificationMessage(notification.message).length > 100"
+                                  class="text-blue-400 text-xs hover:text-blue-300 transition-colors">
+                              ... Cliquer pour voir plus
+                            </span>
+                          </div>
+
+                          <!-- Priority Badge -->
+                          <div class="mt-2">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                  [class]="notification.priority === 'HIGH' ? 'bg-red-500/10 text-red-400' :
+                                           notification.priority === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-400' :
+                                           'bg-blue-500/10 text-blue-400'">
+                              {{ notification.priority === 'HIGH' ? 'Haute' :
+                                 notification.priority === 'MEDIUM' ? 'Moyenne' : 'Normale' }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </header>
@@ -629,9 +740,392 @@ interface SubMenuItem {
     <!-- All Tickets Template -->
     <ng-template #allTicketsTemplate>
       <div class="space-y-6">
-        <h3 class="text-xl font-bold text-white">Tous les Tickets de l'Équipe</h3>
-        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <p class="text-slate-400">Liste de tous les tickets (ouverts, fermés, etc.)...</p>
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-2xl font-bold text-white mb-2">Tous les Tickets de l'Équipe</h3>
+            <div *ngIf="!teamTicketsLoading && teamTickets.length > 0" class="flex items-center space-x-6 text-sm">
+              <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span class="text-slate-300">{{ teamTickets.length }} tickets au total</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span class="text-slate-300">{{ getTicketCountByStatus('OUVERT') }} ouverts</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <span class="text-slate-300">{{ getTicketCountByStatus('EN_COURS') }} en cours</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <span class="text-slate-300">{{ getUnassignedTicketsCount() }} non assignés</span>
+              </div>
+            </div>
+          </div>
+          <button
+            (click)="loadTeamTickets()"
+            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 shadow-lg"
+            [disabled]="teamTicketsLoading">
+            <svg *ngIf="!teamTicketsLoading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <svg *ngIf="teamTicketsLoading" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span *ngIf="teamTicketsLoading">Chargement...</span>
+            <span *ngIf="!teamTicketsLoading">Actualiser</span>
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-lg">
+          <div class="flex items-center mb-4">
+            <svg class="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"></path>
+            </svg>
+            <h4 class="text-lg font-semibold text-white">Filtres</h4>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="flex items-center text-sm font-medium text-slate-300 mb-3">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Statut
+              </label>
+              <select
+                [(ngModel)]="selectedTicketStatusFilter"
+                (change)="filterTeamTickets()"
+                class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                <option value="">Tous les statuts</option>
+                <option value="OUVERT">🟢 Ouvert</option>
+                <option value="EN_COURS">🔵 En cours</option>
+                <option value="RESOLU">🟡 Résolu</option>
+                <option value="FERME">⚫ Fermé</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="flex items-center text-sm font-medium text-slate-300 mb-3">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Priorité
+              </label>
+              <select
+                [(ngModel)]="selectedTicketPriorityFilter"
+                (change)="filterTeamTickets()"
+                class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                <option value="">Toutes les priorités</option>
+                <option value="FAIBLE">⬇️ Faible</option>
+                <option value="NORMALE">➡️ Normale</option>
+                <option value="HAUTE">⬆️ Haute</option>
+                <option value="CRITIQUE">🔴 Critique</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="flex items-center text-sm font-medium text-slate-300 mb-3">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                Recherche
+              </label>
+              <div class="relative">
+                <input
+                  type="text"
+                  [(ngModel)]="ticketSearchTerm"
+                  (input)="filterTeamTickets()"
+                  placeholder="Rechercher par titre, description..."
+                  class="w-full px-4 py-3 pl-10 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                <svg class="absolute left-3 top-3.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter Summary -->
+          <div *ngIf="selectedTicketStatusFilter || selectedTicketPriorityFilter || ticketSearchTerm"
+               class="mt-4 pt-4 border-t border-slate-600">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2 text-sm text-slate-300">
+                <span>Filtres actifs:</span>
+                <span *ngIf="selectedTicketStatusFilter" class="px-2 py-1 bg-blue-900 text-blue-200 rounded text-xs">
+                  Statut: {{ getStatusLabel(selectedTicketStatusFilter) }}
+                </span>
+                <span *ngIf="selectedTicketPriorityFilter" class="px-2 py-1 bg-orange-900 text-orange-200 rounded text-xs">
+                  Priorité: {{ getPriorityLabel(selectedTicketPriorityFilter) }}
+                </span>
+                <span *ngIf="ticketSearchTerm" class="px-2 py-1 bg-green-900 text-green-200 rounded text-xs">
+                  Recherche: "{{ ticketSearchTerm }}"
+                </span>
+              </div>
+              <button
+                (click)="clearAllFilters()"
+                class="text-xs text-slate-400 hover:text-white transition-colors">
+                Effacer tous les filtres
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tickets List -->
+        <div class="bg-slate-800 rounded-xl border border-slate-700">
+          <div *ngIf="teamTicketsLoading" class="p-12 text-center">
+            <div class="flex flex-col items-center space-y-4">
+              <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+              <div>
+                <p class="text-white font-medium">Chargement des tickets de l'équipe...</p>
+                <p class="text-slate-400 text-sm mt-1">Récupération des données depuis le serveur</p>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="teamTicketsError" class="p-12 text-center">
+            <div class="flex flex-col items-center space-y-4">
+              <svg class="w-16 h-16 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+              <div>
+                <p class="text-red-400 font-medium">{{ teamTicketsError }}</p>
+                <p class="text-slate-400 text-sm mt-1">Une erreur s'est produite lors du chargement</p>
+              </div>
+              <button
+                (click)="loadTeamTickets()"
+                class="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span>Réessayer</span>
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="!teamTicketsLoading && !teamTicketsError">
+            <div *ngIf="filteredTeamTickets.length === 0 && teamTickets.length === 0" class="p-12 text-center">
+              <div class="flex flex-col items-center space-y-4">
+                <svg class="w-16 h-16 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <div>
+                  <p class="text-slate-300 font-medium">Aucun ticket trouvé</p>
+                  <p class="text-slate-400 text-sm mt-1">Votre équipe n'a pas encore de tickets assignés</p>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="filteredTeamTickets.length === 0 && teamTickets.length > 0" class="p-12 text-center">
+              <div class="flex flex-col items-center space-y-4">
+                <svg class="w-16 h-16 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <div>
+                  <p class="text-slate-300 font-medium">Aucun ticket ne correspond aux filtres</p>
+                  <p class="text-slate-400 text-sm mt-1">{{ teamTickets.length }} tickets au total, mais aucun ne correspond à vos critères</p>
+                </div>
+                <button
+                  (click)="clearAllFilters()"
+                  class="mt-4 px-6 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors">
+                  Effacer les filtres
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="filteredTeamTickets.length > 0" class="space-y-4">
+              <div
+                *ngFor="let ticket of filteredTeamTickets | slice:(currentTicketsPage * ticketsPageSize):(currentTicketsPage * ticketsPageSize + ticketsPageSize)"
+                class="bg-slate-700 rounded-lg p-6 border border-slate-600 hover:border-slate-500 transition-all duration-200 hover:shadow-lg">
+
+                <!-- Header with Title and Status/Priority Badges -->
+                <div class="flex items-start justify-between mb-4">
+                  <div class="flex-1">
+                    <h4 class="text-lg font-semibold text-white mb-2 leading-tight">{{ ticket.titre }}</h4>
+                    <div class="flex items-center space-x-2">
+                      <span
+                        class="px-3 py-1 text-xs font-medium rounded-full border"
+                        [ngClass]="{
+                          'bg-green-900 text-green-200 border-green-700': ticket.statut === 'OUVERT',
+                          'bg-blue-900 text-blue-200 border-blue-700': ticket.statut === 'EN_COURS',
+                          'bg-yellow-900 text-yellow-200 border-yellow-700': ticket.statut === 'RESOLU',
+                          'bg-gray-900 text-gray-200 border-gray-700': ticket.statut === 'FERME'
+                        }">
+                        {{ getStatusLabel(ticket.statut) }}
+                      </span>
+                      <span
+                        class="px-3 py-1 text-xs font-medium rounded-full border"
+                        [ngClass]="{
+                          'bg-gray-800 text-gray-300 border-gray-600': ticket.priorite === 'FAIBLE',
+                          'bg-blue-800 text-blue-200 border-blue-600': ticket.priorite === 'NORMALE',
+                          'bg-orange-800 text-orange-200 border-orange-600': ticket.priorite === 'HAUTE',
+                          'bg-red-800 text-red-200 border-red-600': ticket.priorite === 'CRITIQUE'
+                        }">
+                        {{ getPriorityLabel(ticket.priorite) }}
+                      </span>
+                      <span class="px-3 py-1 text-xs font-medium rounded-full bg-slate-600 text-slate-200 border border-slate-500">
+                        {{ ticket.categorie }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="text-right text-xs text-slate-400">
+                    <div>ID: {{ ticket.id | slice:0:8 }}...</div>
+                  </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-4">
+                  <p class="text-slate-300 text-sm leading-relaxed">
+                    {{ ticket.description | slice:0:200 }}
+                    <span *ngIf="ticket.description.length > 200" class="text-slate-500">...</span>
+                  </p>
+                </div>
+
+                <!-- Assignment Information -->
+                <div class="mb-4 p-3 bg-slate-800 rounded-lg border border-slate-600">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-2 h-2 rounded-full"
+                           [ngClass]="{
+                             'bg-green-400': ticket.technicienId,
+                             'bg-orange-400': !ticket.technicienId
+                           }"></div>
+                      <div>
+                        <div *ngIf="ticket.technicienId && ticket.technicienPrenom && ticket.technicienNom" class="text-sm">
+                          <span class="text-white font-medium">{{ ticket.technicienPrenom }} {{ ticket.technicienNom }}</span>
+                          <span *ngIf="ticket.technicienSpecialite" class="text-slate-400 ml-2">
+                            • {{ ticket.technicienSpecialite }}
+                          </span>
+                          <div *ngIf="ticket.technicienEmail" class="text-xs text-slate-500 mt-1">
+                            {{ ticket.technicienEmail }}
+                          </div>
+                        </div>
+                        <div *ngIf="ticket.technicienId && (!ticket.technicienPrenom || !ticket.technicienNom)" class="text-sm">
+                          <span class="text-blue-300">Assigné</span>
+                          <span class="text-slate-500 ml-2">ID: {{ ticket.technicienId | slice:0:8 }}...</span>
+                        </div>
+                        <div *ngIf="!ticket.technicienId" class="text-sm">
+                          <span class="text-orange-300 font-medium">Non assigné</span>
+                          <span class="text-slate-500 ml-2">En attente d'attribution</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div *ngIf="ticket.technicienId" class="text-xs text-slate-500">
+                      Assigné
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Timestamps and Metadata -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                      <div class="text-slate-400">Créé le</div>
+                      <div class="text-white font-medium">{{ ticket.dateCreation | date:'dd/MM/yyyy à HH:mm' }}</div>
+                    </div>
+                  </div>
+
+                  <div *ngIf="ticket.dateModification" class="flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    <div>
+                      <div class="text-slate-400">Modifié le</div>
+                      <div class="text-white font-medium">{{ ticket.dateModification | date:'dd/MM/yyyy à HH:mm' }}</div>
+                    </div>
+                  </div>
+
+                  <div *ngIf="ticket.dateFermeture" class="flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                      <div class="text-slate-400">Fermé le</div>
+                      <div class="text-white font-medium">{{ ticket.dateFermeture | date:'dd/MM/yyyy à HH:mm' }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Resolution Comment (if exists) -->
+                <div *ngIf="ticket.commentaireResolution" class="mt-4 p-3 bg-green-900/20 border border-green-700/50 rounded-lg">
+                  <div class="flex items-start space-x-2">
+                    <svg class="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                      <div class="text-green-300 text-xs font-medium mb-1">Commentaire de résolution</div>
+                      <div class="text-green-100 text-sm">{{ ticket.commentaireResolution }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pagination -->
+            <div *ngIf="filteredTeamTickets.length > ticketsPageSize" class="mt-6">
+              <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-4">
+                    <div class="text-sm text-slate-300">
+                      <span class="font-medium text-white">
+                        {{ currentTicketsPage * ticketsPageSize + 1 }} -
+                        {{ Math.min((currentTicketsPage + 1) * ticketsPageSize, filteredTeamTickets.length) }}
+                      </span>
+                      <span class="text-slate-400">sur {{ filteredTeamTickets.length }} tickets</span>
+                    </div>
+                    <div class="text-xs text-slate-500">
+                      Page {{ currentTicketsPage + 1 }} sur {{ Math.ceil(filteredTeamTickets.length / ticketsPageSize) }}
+                    </div>
+                  </div>
+
+                  <div class="flex items-center space-x-2">
+                    <button
+                      (click)="currentTicketsPage = 0"
+                      [disabled]="currentTicketsPage === 0"
+                      class="p-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Première page">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                      </svg>
+                    </button>
+
+                    <button
+                      (click)="currentTicketsPage = currentTicketsPage - 1"
+                      [disabled]="currentTicketsPage === 0"
+                      class="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                      </svg>
+                      <span>Précédent</span>
+                    </button>
+
+                    <button
+                      (click)="currentTicketsPage = currentTicketsPage + 1"
+                      [disabled]="(currentTicketsPage + 1) * ticketsPageSize >= filteredTeamTickets.length"
+                      class="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2">
+                      <span>Suivant</span>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                      </svg>
+                    </button>
+
+                    <button
+                      (click)="currentTicketsPage = Math.ceil(filteredTeamTickets.length / ticketsPageSize) - 1"
+                      [disabled]="(currentTicketsPage + 1) * ticketsPageSize >= filteredTeamTickets.length"
+                      class="p-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Dernière page">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </ng-template>
@@ -1219,6 +1713,25 @@ export class ManagerDashboardComponent implements OnInit {
   selectedTechnicianForCompetences: TechnicianResponse | null = null;
   competenceForm!: FormGroup;
 
+  // Team tickets management
+  teamTickets: TeamTicketResponse[] = [];
+  filteredTeamTickets: TeamTicketResponse[] = [];
+  teamTicketsLoading = false;
+  teamTicketsError = '';
+  selectedTicketStatusFilter = '';
+  selectedTicketPriorityFilter = '';
+  ticketSearchTerm = '';
+  currentTicketsPage = 0;
+  ticketsPageSize = 10;
+  totalTickets = 0;
+
+  // Notifications
+  notifications: NotificationDTO[] = [];
+  unreadNotificationCount = 0;
+  showNotifications = false;
+  isLoadingNotifications = false;
+  expandedNotifications = new Set<string>();
+
   // Forms
   technicianForm!: FormGroup;
 
@@ -1378,6 +1891,9 @@ export class ManagerDashboardComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private technicianService: TechnicianService,
+    private technicianManagementService: TechnicianManagementService,
+    private teamTicketsService: TeamTicketsService,
+    private notificationService: NotificationService,
     private fb: FormBuilder
   ) {
     this.initializeTechnicianForm();
@@ -1388,6 +1904,7 @@ export class ManagerDashboardComponent implements OnInit {
     this.initializeForms();
     this.loadTechnicians();
     this.loadTechnicianStats();
+    this.initializeNotifications();
   }
 
   /**
@@ -1422,6 +1939,11 @@ export class ManagerDashboardComponent implements OnInit {
 
   setActiveView(viewId: string): void {
     this.activeView = viewId;
+
+    // Load team tickets when switching to all-tickets view
+    if (viewId === 'all-tickets') {
+      this.loadTeamTickets();
+    }
   }
 
   getMenuItemClass(itemId: string): string {
@@ -1527,30 +2049,12 @@ export class ManagerDashboardComponent implements OnInit {
     return this.competenceForm.get('competences') as FormArray;
   }
 
-  /**
-   * Parse competences JSON and return only names
-   */
-  getCompetenceNames(competencesJson: string): string {
-    if (!competencesJson) {
-      return 'Aucune compétence';
-    }
 
-    try {
-      const competences = JSON.parse(competencesJson);
-      if (Array.isArray(competences) && competences.length > 0) {
-        return competences.map(comp => comp.nom).join(', ');
-      }
-      return 'Aucune compétence';
-    } catch (error) {
-      console.warn('Error parsing competences JSON:', error);
-      return 'Format invalide';
-    }
-  }
 
   /**
    * Parse competences JSON and return array of competences
    */
-  parseCompetences(competencesJson: string): any[] {
+  parseCompetences(competencesJson: string | undefined): any[] {
     if (!competencesJson) {
       return [];
     }
@@ -1565,20 +2069,49 @@ export class ManagerDashboardComponent implements OnInit {
   }
 
   /**
+   * Get competence names as comma-separated string
+   */
+  getCompetenceNames(competencesJson: string | undefined): string {
+    const competences = this.parseCompetences(competencesJson);
+    if (competences.length === 0) {
+      return 'Aucune compétence';
+    }
+    return competences.map(c => c.nom).join(', ');
+  }
+
+  /**
+   * Get workload color based on charge
+   */
+  getWorkloadColor(chargeActuelle: number | undefined): string {
+    const charge = chargeActuelle || 0;
+    if (charge >= 90) return 'text-red-400';
+    if (charge >= 70) return 'text-yellow-400';
+    if (charge >= 50) return 'text-blue-400';
+    return 'text-green-400';
+  }
+
+  /**
+   * Get workload percentage for progress bar
+   */
+  getWorkloadPercentage(chargeActuelle: number | undefined): number {
+    return Math.min(chargeActuelle || 0, 100);
+  }
+
+  /**
    * Load technicians from API
    */
   loadTechnicians(): void {
     this.loading = true;
     this.error = null;
 
-    this.technicianService.getTechnicians().subscribe({
-      next: (technicians) => {
+    this.technicianManagementService.getTechnicians().subscribe({
+      next: (technicians: TechnicianResponse[]) => {
         this.technicians = technicians;
         this.filteredTechniciansForCompetences = [...technicians]; // Initialize filtered list
         this.loading = false;
         console.log('✅ Technicians loaded:', technicians.length);
       },
-      error: (error) => {
+      error: (error: any) => {
         this.error = error.message;
         this.loading = false;
         console.error('❌ Error loading technicians:', error);
@@ -1739,17 +2272,17 @@ export class ManagerDashboardComponent implements OnInit {
         telephone: formValue.telephone,
         localisation: formValue.localisation,
         specialite: formValue.specialite,
-        competences: formValue.competences
+        competencesJson: JSON.stringify(formValue.competences)
       };
 
-      this.technicianService.updateTechnician(this.selectedTechnician.id, updateRequest).subscribe({
-        next: (updatedTechnician) => {
+      this.technicianManagementService.updateTechnician(this.selectedTechnician.id, updateRequest).subscribe({
+        next: (updatedTechnician: TechnicianResponse) => {
           this.loading = false;
           this.closeTechnicianModal();
           this.loadTechnicians();
           console.log('✅ Technician updated successfully');
         },
-        error: (error) => {
+        error: (error: any) => {
           this.error = error.message;
           this.loading = false;
           console.error('❌ Error updating technician:', error);
@@ -1765,18 +2298,18 @@ export class ManagerDashboardComponent implements OnInit {
         telephone: formValue.telephone,
         localisation: formValue.localisation,
         specialite: formValue.specialite,
-        competences: formValue.competences
+        competencesJson: JSON.stringify(formValue.competences)
       };
 
-      this.technicianService.createTechnician(createRequest).subscribe({
-        next: (response) => {
+      this.technicianManagementService.createTechnician(createRequest).subscribe({
+        next: (response: CreateTechnicianResponse) => {
           this.loading = false;
           this.closeTechnicianModal();
           this.loadTechnicians();
           this.loadTechnicianStats();
           console.log('✅ Technician created successfully');
         },
-        error: (error) => {
+        error: (error: any) => {
           this.error = error.message;
           this.loading = false;
           console.error('❌ Error creating technician:', error);
@@ -1814,14 +2347,14 @@ export class ManagerDashboardComponent implements OnInit {
     this.loading = true;
     this.error = null;
 
-    this.technicianService.toggleTechnicianStatus(technician.id, !technician.actif).subscribe({
-      next: (updatedTechnician) => {
+    this.technicianManagementService.toggleTechnicianStatus(technician.id, !technician.actif).subscribe({
+      next: (updatedTechnician: any) => {
         this.loading = false;
         this.loadTechnicians();
         this.loadTechnicianStats();
         console.log('✅ Technician status toggled successfully');
       },
-      error: (error) => {
+      error: (error: any) => {
         this.error = error.message;
         this.loading = false;
         console.error('❌ Error toggling technician status:', error);
@@ -1856,7 +2389,7 @@ export class ManagerDashboardComponent implements OnInit {
       const searchMatch = !this.competenceSearchTerm ||
         technician.nom.toLowerCase().includes(this.competenceSearchTerm.toLowerCase()) ||
         technician.prenom.toLowerCase().includes(this.competenceSearchTerm.toLowerCase()) ||
-        technician.specialite.toLowerCase().includes(this.competenceSearchTerm.toLowerCase()) ||
+        (technician.specialite && technician.specialite.toLowerCase().includes(this.competenceSearchTerm.toLowerCase())) ||
         competences.some(comp =>
           comp.nom.toLowerCase().includes(this.competenceSearchTerm.toLowerCase()) ||
           comp.description.toLowerCase().includes(this.competenceSearchTerm.toLowerCase())
@@ -1932,19 +2465,19 @@ export class ManagerDashboardComponent implements OnInit {
     this.error = null;
 
     const formValue = this.competenceForm.value;
-    const updateRequest = {
-      competences: formValue.competences
+    const updateRequest: UpdateTechnicianRequest = {
+      competencesJson: JSON.stringify(formValue.competences)
     };
 
-    this.technicianService.updateTechnician(this.selectedTechnicianForCompetences.id, updateRequest).subscribe({
-      next: (updatedTechnician) => {
+    this.technicianManagementService.updateTechnician(this.selectedTechnicianForCompetences.id, updateRequest).subscribe({
+      next: (updatedTechnician: TechnicianResponse) => {
         this.loading = false;
         this.closeCompetenceModal();
         this.loadTechnicians(); // Refresh the list
         this.filterCompetences(); // Refresh filtered list
         console.log('✅ Competences updated successfully');
       },
-      error: (error) => {
+      error: (error: any) => {
         this.error = error.message;
         this.loading = false;
         console.error('❌ Error updating competences:', error);
@@ -1966,22 +2499,409 @@ export class ManagerDashboardComponent implements OnInit {
     return this.technicianService.getLevelColor(level);
   }
 
-
+  // ===== TEAM TICKETS METHODS =====
 
   /**
-   * Get workload percentage
+   * Load team tickets from backend
    */
-  getWorkloadPercentage(charge: number): number {
-    return Math.min(100, (charge / 10) * 100); // Assuming max workload is 10
+  loadTeamTickets(): void {
+    this.teamTicketsLoading = true;
+    this.teamTicketsError = '';
+    console.log('📥 Loading team tickets...');
+
+    this.teamTicketsService.getTeamTickets().subscribe({
+      next: (tickets) => {
+        console.log('✅ Loaded team tickets:', tickets);
+        this.teamTickets = tickets;
+        this.filterTeamTickets();
+        this.teamTicketsLoading = false;
+      },
+      error: (error) => {
+        console.error('❌ Error loading team tickets:', error);
+        this.teamTicketsError = 'Erreur lors du chargement des tickets de l\'équipe';
+        this.teamTicketsLoading = false;
+      }
+    });
   }
 
   /**
-   * Get workload color class
+   * Filter team tickets based on status, priority and search term
    */
-  getWorkloadColor(charge: number): string {
-    const percentage = this.getWorkloadPercentage(charge);
-    if (percentage >= 80) return 'bg-red-500';
-    if (percentage >= 60) return 'bg-yellow-500';
-    return 'bg-green-500';
+  filterTeamTickets(): void {
+    let filtered = [...this.teamTickets];
+
+    // Filter by status
+    if (this.selectedTicketStatusFilter) {
+      filtered = filtered.filter(ticket => ticket.statut === this.selectedTicketStatusFilter);
+    }
+
+    // Filter by priority
+    if (this.selectedTicketPriorityFilter) {
+      filtered = filtered.filter(ticket => ticket.priorite === this.selectedTicketPriorityFilter);
+    }
+
+    // Filter by search term
+    if (this.ticketSearchTerm) {
+      const searchTerm = this.ticketSearchTerm.toLowerCase();
+      filtered = filtered.filter(ticket =>
+        ticket.titre.toLowerCase().includes(searchTerm) ||
+        ticket.description.toLowerCase().includes(searchTerm) ||
+        ticket.categorie.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    this.filteredTeamTickets = filtered;
+    this.currentTicketsPage = 0; // Reset to first page
+    console.log(`🔍 Filtered ${filtered.length} tickets from ${this.teamTickets.length} total`);
   }
+
+  /**
+   * Clear all filters
+   */
+  clearAllFilters(): void {
+    this.selectedTicketStatusFilter = '';
+    this.selectedTicketPriorityFilter = '';
+    this.ticketSearchTerm = '';
+    this.filterTeamTickets();
+  }
+
+  /**
+   * Get ticket count by status
+   */
+  getTicketCountByStatus(status: string): number {
+    return this.teamTickets.filter(ticket => ticket.statut === status).length;
+  }
+
+  /**
+   * Get unassigned tickets count
+   */
+  getUnassignedTicketsCount(): number {
+    return this.teamTickets.filter(ticket => !ticket.technicienId).length;
+  }
+
+  /**
+   * Get status label in French
+   */
+  getStatusLabel(status: string): string {
+    switch (status) {
+      case 'OUVERT':
+        return 'Ouvert';
+      case 'EN_COURS':
+        return 'En cours';
+      case 'RESOLU':
+        return 'Résolu';
+      case 'FERME':
+        return 'Fermé';
+      default:
+        return status;
+    }
+  }
+
+  /**
+   * Get priority label in French
+   */
+  getPriorityLabel(priority: string): string {
+    switch (priority) {
+      case 'FAIBLE':
+        return 'Faible';
+      case 'NORMALE':
+        return 'Normale';
+      case 'HAUTE':
+        return 'Haute';
+      case 'CRITIQUE':
+        return 'Critique';
+      default:
+        return priority;
+    }
+  }
+
+  /**
+   * Math utility for template
+   */
+  Math = Math;
+
+  // ==================== NOTIFICATIONS ====================
+
+  /**
+   * Initialize notifications system
+   */
+  initializeNotifications(): void {
+    console.log('🔔 MANAGER INIT: Initializing notifications system...');
+    console.log('🔔 MANAGER INIT: Current user:', this.currentUser);
+    console.log('🔔 MANAGER INIT: User ID:', this.currentUser?.id);
+    console.log('🔔 MANAGER INIT: User role:', this.currentUser?.role);
+
+    // Subscribe to notifications
+    this.notificationService.notifications$.subscribe(
+      notifications => {
+        this.notifications = notifications;
+        console.log('📬 MANAGER NOTIFICATIONS: Received notifications update:', notifications.length);
+        console.log('📬 MANAGER NOTIFICATIONS: Full notifications array:', notifications);
+
+        // Log each notification for debugging
+        notifications.forEach((notif, index) => {
+          console.log(`📬 MANAGER NOTIFICATION ${index + 1}:`, {
+            id: notif.id,
+            title: notif.title,
+            message: notif.message,
+            type: notif.type,
+            priority: notif.priority,
+            readStatus: notif.readStatus,
+            createdAt: notif.createdAt
+          });
+        });
+      }
+    );
+
+    // Subscribe to unread count
+    this.notificationService.unreadCount$.subscribe(
+      count => {
+        this.unreadNotificationCount = count;
+        console.log('🔢 Manager: Unread count updated:', count);
+      }
+    );
+
+    // Subscribe to new notifications
+    this.notificationService.newNotification$.subscribe(
+      notification => {
+        console.log('🆕 Manager: New notification received:', notification);
+        this.showNotificationToast(notification);
+      }
+    );
+
+    // Test notification service first
+    this.notificationService.testNotificationService().subscribe({
+      next: () => {
+        console.log('✅ Manager: Notification service test passed, loading notifications...');
+        this.loadNotifications();
+      },
+      error: (error) => {
+        console.error('❌ Manager: Notification service test failed:', error);
+      }
+    });
+  }
+
+  /**
+   * Load notifications
+   */
+  loadNotifications(): void {
+    console.log('🔔 MANAGER LOAD: Loading notifications from server...');
+    console.log('🔔 MANAGER LOAD: Current user ID:', this.currentUser?.id);
+    this.isLoadingNotifications = true;
+
+    this.notificationService.getNotifications().subscribe({
+      next: (notifications) => {
+        console.log('✅ MANAGER LOAD: Notifications loaded successfully from server:', notifications.length);
+        console.log('✅ MANAGER LOAD: Notifications data:', notifications);
+        this.notifications = notifications;
+        this.isLoadingNotifications = false;
+
+        // Check if any notifications are for ticket assignments
+        const assignmentNotifications = notifications.filter(n => n.type === 'TICKET_ASSIGNED');
+        console.log('🎯 MANAGER LOAD: Assignment notifications found:', assignmentNotifications.length, assignmentNotifications);
+      },
+      error: (error) => {
+        console.error('❌ MANAGER LOAD: Error loading notifications:', error);
+        this.isLoadingNotifications = false;
+      }
+    });
+
+    // Load unread count
+    this.notificationService.getUnreadCount().subscribe({
+      next: (count) => {
+        console.log('✅ Manager: Unread count loaded:', count);
+      },
+      error: (error) => {
+        console.error('❌ Manager: Error loading unread count:', error);
+      }
+    });
+  }
+
+  /**
+   * Toggle notifications panel
+   */
+  toggleNotifications(): void {
+    this.showNotifications = !this.showNotifications;
+    if (this.showNotifications && this.notifications.length === 0) {
+      this.loadNotifications();
+    }
+  }
+
+  /**
+   * Mark notification as read
+   */
+  markNotificationAsRead(notification: NotificationDTO): void {
+    if (!notification.readStatus) {
+      console.log('🔔 Manager: Marking notification as read:', notification.id);
+      this.notificationService.markAsRead(notification.id).subscribe({
+        next: () => {
+          console.log('✅ Manager: Notification marked as read, updating local state');
+          // Update local state immediately - notification stays visible but marked as read
+          notification.readStatus = true;
+          this.unreadNotificationCount = Math.max(0, this.unreadNotificationCount - 1);
+
+          // Update the notifications subject to reflect the change
+          this.notificationService.updateNotificationReadStatus(notification.id, true);
+        },
+        error: (error) => {
+          console.error('❌ Manager: Error marking notification as read:', error);
+        }
+      });
+    }
+  }
+
+  /**
+   * Mark all notifications as read
+   */
+  markAllNotificationsAsRead(): void {
+    console.log('🔔 Manager: Marking all notifications as read');
+    this.notificationService.markAllAsRead().subscribe({
+      next: () => {
+        console.log('✅ Manager: All notifications marked as read, updating local state');
+        // Update local state - notifications stay visible but marked as read
+        this.notifications.forEach(n => {
+          if (!n.readStatus) {
+            n.readStatus = true;
+            this.notificationService.updateNotificationReadStatus(n.id, true);
+          }
+        });
+        this.unreadNotificationCount = 0;
+      },
+      error: (error) => {
+        console.error('❌ Manager: Error marking all notifications as read:', error);
+      }
+    });
+  }
+
+  /**
+   * Show notification toast (for new notifications)
+   */
+  showNotificationToast(notification: NotificationDTO): void {
+    console.log('🔔 Manager: New notification toast:', notification.title);
+
+    // Simple browser notification (if permission granted)
+    if (Notification.permission === 'granted') {
+      new Notification(notification.title, {
+        body: notification.message,
+        icon: '/assets/icons/notification-icon.png'
+      });
+    }
+  }
+
+  /**
+   * Get notification icon based on type
+   */
+  getNotificationIcon(type: string): string {
+    switch (type) {
+      case 'TICKET_ASSIGNED':
+        return 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2';
+      case 'TICKET_UPDATED':
+        return 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z';
+      case 'SYSTEM':
+        return 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
+      default:
+        return 'M15 17h5l-5 5v-5zM4 19h6v-2H4v2zM20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z';
+    }
+  }
+
+  /**
+   * Get notification color based on priority
+   */
+  getNotificationColor(priority: string): string {
+    switch (priority) {
+      case 'HIGH':
+        return 'text-red-400 bg-red-500/10 border-red-500/20';
+      case 'MEDIUM':
+        return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
+      case 'LOW':
+        return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+      default:
+        return 'text-slate-400 bg-slate-500/10 border-slate-500/20';
+    }
+  }
+
+  /**
+   * Get relative time for notification
+   */
+  getNotificationTime(dateString: string): string {
+    return this.getRelativeTime(dateString);
+  }
+
+  /**
+   * Get relative time (e.g., "Il y a 30 min")
+   */
+  getRelativeTime(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMinutes < 1) {
+      return 'À l\'instant';
+    } else if (diffMinutes < 60) {
+      return `Il y a ${diffMinutes} min`;
+    } else if (diffHours < 24) {
+      return `Il y a ${diffHours}h`;
+    } else if (diffDays < 7) {
+      return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+    } else {
+      return this.getFormattedDate(dateString);
+    }
+  }
+
+  /**
+   * Get formatted date
+   */
+  getFormattedDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  /**
+   * Track notifications for ngFor performance
+   */
+  trackNotification(index: number, notification: NotificationDTO): string {
+    return notification.id;
+  }
+
+  /**
+   * Get clean notification title (remove prefixes)
+   */
+  getCleanNotificationTitle(title: string): string {
+    return title.replace(/^\[.*?\]\s*/, '');
+  }
+
+  /**
+   * Get clean notification message (remove prefixes)
+   */
+  getCleanNotificationMessage(message: string): string {
+    return message.replace(/^\[.*?\]\s*/, '');
+  }
+
+  /**
+   * Toggle notification expanded state
+   */
+  toggleNotificationExpanded(notificationId: string): void {
+    if (this.expandedNotifications.has(notificationId)) {
+      this.expandedNotifications.delete(notificationId);
+    } else {
+      this.expandedNotifications.add(notificationId);
+    }
+  }
+
+  /**
+   * Check if notification is expanded
+   */
+  isNotificationExpanded(notificationId: string): boolean {
+    return this.expandedNotifications.has(notificationId);
+  }
+
 }

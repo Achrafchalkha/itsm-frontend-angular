@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -7,6 +7,8 @@ import { User } from '../core/interfaces/auth.interface';
 import { TechnicianService, TechnicianTicketResponse } from '../core/services/technician.service';
 import { TicketService } from '../core/services/ticket.service';
 import { AttachedFile } from '../core/services/file-upload.service';
+import { NotificationService, NotificationDTO } from '../core/services/notification.service';
+import { Subscription } from 'rxjs';
 
 interface MenuItem {
   id: string;
@@ -21,6 +23,34 @@ interface MenuItem {
   selector: 'app-technician-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
+  styles: [`
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(51, 65, 85, 0.3);
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.5);
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.7);
+    }
+    .line-clamp-1 {
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  `],
   template: `
     <div class="min-h-screen bg-slate-900 flex">
       <!-- Enhanced Vertical Sidebar -->
@@ -38,7 +68,7 @@ interface MenuItem {
               <!-- Status indicator -->
               <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-slate-800 rounded-full animate-pulse"></div>
             </div>
-            <div>
+            <div class="flex-1">
               <h1 class="text-xl font-bold text-white">ITSM Dashboard</h1>
               <p class="text-sm text-slate-400">Support Technique</p>
               <div class="flex items-center space-x-2 mt-1">
@@ -46,6 +76,7 @@ interface MenuItem {
                 <span class="text-xs text-green-400 font-medium">En ligne</span>
               </div>
             </div>
+
           </div>
 
           <!-- Enhanced User Info -->
@@ -124,19 +155,136 @@ interface MenuItem {
               <p class="text-sm text-slate-400">{{ getActiveMenuDescription() }}</p>
             </div>
             <div class="flex items-center space-x-4">
-              <!-- Notifications -->
-              <button class="relative p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4 19h6v-6H4v6zM16 3h5v5h-5V3zM4 3h6v6H4V3z"></path>
-                </svg>
-                <span class="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
-              </button>
-              
+              <!-- Enhanced Notifications System -->
+              <div class="relative">
+                <button (click)="toggleNotifications()"
+                        class="relative p-3 text-slate-400 hover:text-white transition-all duration-200 rounded-xl hover:bg-slate-700/50 group"
+                        title="Notifications">
+                  <svg class="w-6 h-6 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4 19h6v-2H4v2zM20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"></path>
+                  </svg>
+                  <!-- Enhanced Notification Badge -->
+                  <div *ngIf="unreadNotificationCount > 0"
+                       class="absolute -top-1 -right-1 min-w-[20px] h-5 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-red-500/50">
+                    {{ unreadNotificationCount > 99 ? '99+' : unreadNotificationCount }}
+                  </div>
+                </button>
+
+                <!-- Enhanced Notifications Panel -->
+                <div *ngIf="showNotifications"
+                     class="absolute top-full right-0 mt-3 w-[420px] bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl z-50 max-h-[500px] overflow-hidden backdrop-blur-sm">
+
+                  <!-- Enhanced Header -->
+                  <div class="p-5 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/80 to-slate-700/80">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4 19h6v-2H4v2zM20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"></path>
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 class="text-lg font-semibold text-white">Notifications</h3>
+                          <p class="text-xs text-slate-400">{{ unreadNotificationCount }} non lues</p>
+                        </div>
+                      </div>
+                      <div class="flex items-center space-x-2">
+                        <button (click)="markAllNotificationsAsRead()"
+                                *ngIf="unreadNotificationCount > 0"
+                                class="px-3 py-1 text-xs font-medium text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-all duration-200">
+                          Tout marquer
+                        </button>
+                        <button (click)="toggleNotifications()"
+                                class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-600/50 rounded-lg transition-all duration-200">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Loading State -->
+                  <div *ngIf="isLoadingNotifications" class="p-8 text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <p class="text-slate-400 text-sm mt-3">Chargement des notifications...</p>
+                  </div>
+
+                  <!-- Enhanced Notifications List -->
+                  <div *ngIf="!isLoadingNotifications" class="max-h-80 overflow-y-auto custom-scrollbar">
+                    <!-- Empty State -->
+                    <div *ngIf="notifications.length === 0" class="p-8 text-center">
+                      <div class="w-16 h-16 bg-gradient-to-br from-slate-600/20 to-slate-700/20 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4 19h6v-2H4v2zM20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"></path>
+                        </svg>
+                      </div>
+                      <h4 class="text-lg font-medium text-white mb-2">Aucune notification</h4>
+                      <p class="text-slate-400 text-sm">Vous êtes à jour ! Les nouvelles notifications apparaîtront ici.</p>
+                    </div>
+
+                    <!-- Notifications Items -->
+                    <div *ngFor="let notification of notifications; trackBy: trackNotification"
+                         (click)="markNotificationAsRead(notification)"
+                         class="p-4 border-b border-slate-700/30 hover:bg-slate-700/30 cursor-pointer transition-all duration-200 group"
+                         [class]="!notification.readStatus ? 'bg-gradient-to-r from-blue-500/5 to-purple-500/5 border-l-4 border-l-blue-500' : ''">
+
+                      <div class="flex items-start space-x-4">
+                        <!-- Enhanced Icon -->
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform duration-200"
+                             [class]="getNotificationColor(notification.priority)">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getNotificationIcon(notification.type)"></path>
+                          </svg>
+                        </div>
+
+                        <!-- Enhanced Content -->
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-start justify-between mb-2">
+                            <h4 class="text-sm font-semibold text-white group-hover:text-blue-300 transition-colors line-clamp-1">
+                              {{ getCleanNotificationTitle(notification.title) }}
+                            </h4>
+                            <div class="flex items-center space-x-2 ml-2">
+                              <span class="text-xs text-slate-400 font-medium">{{ getNotificationTime(notification.createdAt) }}</span>
+                              <div *ngIf="!notification.readStatus" class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                            </div>
+                          </div>
+
+                          <p class="text-sm text-slate-300 line-clamp-2 mb-3 leading-relaxed">
+                            {{ getCleanNotificationMessage(notification.message) }}
+                          </p>
+
+                          <!-- Enhanced Priority Badge -->
+                          <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 text-xs font-medium rounded-full"
+                                  [class]="getNotificationColor(notification.priority)">
+                              {{ getPriorityLabel(notification.priority) }}
+                            </span>
+                            <span class="text-xs text-slate-500">{{ getFormattedDate(notification.createdAt) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Enhanced Footer -->
+                  <div class="p-4 border-t border-slate-700/50 bg-gradient-to-r from-slate-800/50 to-slate-700/50">
+                    <button (click)="loadNotifications()"
+                            class="w-full py-2 text-center text-sm font-medium text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-all duration-200">
+                      <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                      </svg>
+                      Actualiser les notifications
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <!-- Refresh -->
-              <button (click)="refreshData()" 
-                      class="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-700"
+              <button (click)="refreshData()"
+                      class="p-3 text-slate-400 hover:text-white transition-all duration-200 rounded-xl hover:bg-slate-700/50 group"
                       title="Actualiser">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-6 h-6 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
               </button>
@@ -269,18 +417,38 @@ interface MenuItem {
                     <h3 class="text-lg font-semibold text-white">Mes Tickets Assignés</h3>
                     <p class="text-sm text-slate-400 mt-1">Gérez vos tickets en cours et à traiter ({{ assignedTickets.length }} tickets)</p>
                   </div>
-                  <div class="flex space-x-2">
+                  <div class="flex flex-wrap gap-2">
                     <button (click)="filterTicketsByStatus('ALL')"
-                            [class]="currentFilter === 'ALL' ? 'px-4 py-2 bg-blue-600 text-white text-sm rounded-lg font-medium' : 'px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors'">
-                      Tous
+                            [class]="currentFilter === 'ALL' ? 'px-4 py-2 bg-gradient-to-r from-slate-500 to-slate-600 text-white text-sm rounded-lg font-medium shadow-lg shadow-slate-500/25' : 'px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-slate-500/25'">
+                      <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-slate-300 rounded-full"></div>
+                        <span>Tous</span>
+                        <span class="bg-slate-400/30 px-2 py-0.5 rounded-full text-xs">{{ assignedTickets.length }}</span>
+                      </div>
                     </button>
                     <button (click)="filterTicketsByStatus('EN_COURS')"
-                            [class]="currentFilter === 'EN_COURS' ? 'px-4 py-2 bg-orange-600 text-white text-sm rounded-lg font-medium' : 'px-4 py-2 bg-slate-600 hover:bg-orange-600 text-white text-sm rounded-lg transition-colors'">
-                      Nouveaux
+                            [class]="currentFilter === 'EN_COURS' ? 'px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm rounded-lg font-medium shadow-lg shadow-orange-500/25' : 'px-4 py-2 bg-slate-600 hover:bg-orange-500 text-white text-sm rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-orange-500/25'">
+                      <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-orange-300 rounded-full"></div>
+                        <span>En Cours</span>
+                        <span class="bg-orange-400/30 px-2 py-0.5 rounded-full text-xs">{{ getStatusCount('EN_COURS') }}</span>
+                      </div>
                     </button>
                     <button (click)="filterTicketsByStatus('OUVERT')"
-                            [class]="currentFilter === 'OUVERT' ? 'px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-medium' : 'px-4 py-2 bg-slate-600 hover:bg-green-600 text-white text-sm rounded-lg transition-colors'">
-                      En Cours
+                            [class]="currentFilter === 'OUVERT' ? 'px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm rounded-lg font-medium shadow-lg shadow-blue-500/25' : 'px-4 py-2 bg-slate-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25'">
+                      <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-blue-300 rounded-full"></div>
+                        <span>Ouvert</span>
+                        <span class="bg-blue-400/30 px-2 py-0.5 rounded-full text-xs">{{ getStatusCount('OUVERT') }}</span>
+                      </div>
+                    </button>
+                    <button (click)="filterTicketsByStatus('RESOLU')"
+                            [class]="currentFilter === 'RESOLU' ? 'px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm rounded-lg font-medium shadow-lg shadow-green-500/25' : 'px-4 py-2 bg-slate-600 hover:bg-green-500 text-white text-sm rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-green-500/25'">
+                      <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-300 rounded-full"></div>
+                        <span>Résolu</span>
+                        <span class="bg-green-400/30 px-2 py-0.5 rounded-full text-xs">{{ getStatusCount('RESOLU') }}</span>
+                      </div>
                     </button>
                   </div>
                 </div>
@@ -525,50 +693,96 @@ interface MenuItem {
                     <p class="text-slate-400 mt-2">Chargement des commentaires...</p>
                   </div>
 
-                  <!-- Real Comments -->
+                  <!-- Enhanced Real Comments -->
                   <div *ngIf="!isLoadingComments && recentComments.length > 0" class="space-y-4">
-                    <div *ngFor="let comment of recentComments"
-                         class="bg-gradient-to-r from-slate-700/50 to-slate-600/50 rounded-lg p-4 border border-slate-600/50 hover:border-slate-500/50 transition-all duration-300">
-                      <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center space-x-3">
-                          <span class="text-sm font-medium text-white">{{ getTicketDisplayId(comment) }} - {{ comment.ticketTitre }}</span>
-                          <span class="px-2 py-1 text-xs font-medium rounded"
-                                [class]="getStatusDisplay(comment.ticketStatut).color">
-                            {{ getStatusDisplay(comment.ticketStatut).label }}
-                          </span>
-                          <span class="px-2 py-1 text-xs font-medium rounded"
-                                [class]="getPriorityDisplay(comment.ticketPriorite).color">
-                            {{ getPriorityDisplay(comment.ticketPriorite).label }}
-                          </span>
+                    <div *ngFor="let comment of recentComments; let i = index"
+                         class="group bg-gradient-to-br from-slate-700/60 to-slate-800/60 rounded-xl p-5 border border-slate-600/30 hover:border-slate-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
+
+                      <!-- Header with ticket info -->
+                      <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                          <div class="flex items-center space-x-3 mb-2">
+                            <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                              </svg>
+                            </div>
+                            <div class="flex-1">
+                              <h4 class="text-sm font-semibold text-white group-hover:text-purple-300 transition-colors">
+                                {{ comment.ticketTitre }}
+                              </h4>
+                              <div class="flex items-center space-x-2 mt-1">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full"
+                                      [class]="getStatusDisplay(comment.ticketStatut).color.replace('text-', 'bg-').replace('400', '500/20') + ' ' + getStatusDisplay(comment.ticketStatut).color">
+                                  {{ getStatusDisplay(comment.ticketStatut).label }}
+                                </span>
+                                <span class="px-2 py-1 text-xs font-medium rounded-full"
+                                      [class]="getPriorityDisplay(comment.ticketPriorite).color.replace('text-', 'bg-').replace('400', '500/20') + ' ' + getPriorityDisplay(comment.ticketPriorite).color">
+                                  {{ getPriorityDisplay(comment.ticketPriorite).label }}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <span class="text-xs text-slate-400">{{ getRelativeTime(comment.dateCreation) }}</span>
+                        <div class="text-right">
+                          <span class="text-xs text-slate-400 font-medium">{{ getRelativeTime(comment.dateCreation) }}</span>
+                          <p class="text-xs text-slate-500 mt-1">{{ getFormattedDate(comment.dateCreation) }}</p>
+                        </div>
                       </div>
 
-                      <p class="text-sm text-slate-300 mb-3 leading-relaxed">{{ comment.commentaire }}</p>
+                      <!-- Comment content -->
+                      <div class="bg-slate-600/20 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-slate-200 leading-relaxed italic">
+                          "{{ comment.commentaire }}"
+                        </p>
+                      </div>
 
+                      <!-- Footer -->
                       <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                          <span class="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded font-medium">
-                            RÉSOLUTION
-                          </span>
-                          <span class="text-xs text-slate-500">Par {{ comment.technicienNom }}</span>
+                        <div class="flex items-center space-x-3">
+                          <div class="flex items-center space-x-2">
+                            <div class="w-6 h-6 bg-purple-500/20 rounded-full flex items-center justify-center">
+                              <svg class="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                              </svg>
+                            </div>
+                            <span class="text-xs font-medium text-purple-400">RÉSOLUTION</span>
+                          </div>
+                          <div class="w-1 h-1 bg-slate-500 rounded-full"></div>
+                          <span class="text-xs text-slate-400">Par {{ comment.technicienNom }}</span>
                         </div>
-                        <div class="text-xs text-slate-500">
-                          {{ getFormattedDate(comment.dateCreation) }}
+                        <div class="flex items-center space-x-2">
+                          <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          <span class="text-xs text-green-400 font-medium">Commentaire #{{ i + 1 }}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <!-- No Comments -->
-                  <div *ngIf="!isLoadingComments && recentComments.length === 0" class="text-center py-8">
-                    <div class="bg-slate-700/30 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                      <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <!-- Enhanced No Comments State -->
+                  <div *ngIf="!isLoadingComments && recentComments.length === 0" class="text-center py-12">
+                    <div class="bg-gradient-to-br from-purple-500/10 to-purple-600/10 rounded-2xl w-20 h-20 mx-auto mb-6 flex items-center justify-center border border-purple-500/20">
+                      <svg class="w-10 h-10 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                       </svg>
                     </div>
-                    <h4 class="font-medium text-white mb-2">Aucun commentaire récent</h4>
-                    <p class="text-slate-400 text-sm">Vos commentaires de résolution apparaîtront ici une fois que vous aurez résolu des tickets.</p>
+                    <h4 class="text-xl font-semibold text-white mb-3">Aucun commentaire récent</h4>
+                    <p class="text-slate-400 text-sm max-w-md mx-auto mb-6 leading-relaxed">
+                      Vos commentaires de résolution apparaîtront ici une fois que vous aurez ajouté des notes techniques à vos tickets résolus.
+                    </p>
+                    <div class="bg-purple-600/10 border border-purple-600/20 rounded-xl p-4 max-w-sm mx-auto">
+                      <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-purple-600/20 rounded-lg flex items-center justify-center">
+                          <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                        </div>
+                        <div class="text-left">
+                          <p class="text-sm font-medium text-purple-400">Astuce</p>
+                          <p class="text-xs text-slate-400">Ajoutez des commentaires lors de la résolution de tickets</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1441,7 +1655,7 @@ interface MenuItem {
     <!-- Ticket Selection Modal - Temporarily Disabled due to HTML structure issues -->
   `,
 })
-export class TechnicianDashboardComponent implements OnInit {
+export class TechnicianDashboardComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   activeSection: string = 'dashboard';
   loading: boolean = false;
@@ -1547,11 +1761,19 @@ export class TechnicianDashboardComponent implements OnInit {
     avgResolution: '2.4h'
   };
 
+  // Notifications
+  notifications: NotificationDTO[] = [];
+  unreadNotificationCount: number = 0;
+  showNotifications: boolean = false;
+  isLoadingNotifications: boolean = false;
+  private subscriptions: Subscription[] = [];
+
   constructor(
     private authService: AuthService,
     private router: Router,
     private technicianService: TechnicianService,
-    private ticketService: TicketService
+    private ticketService: TicketService,
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -1575,11 +1797,241 @@ export class TechnicianDashboardComponent implements OnInit {
     this.loadAssignedTickets();
     this.updateDashboardStats();
     this.loadTechnicianProfile();
+    this.initializeNotifications();
+  }
+
+  ngOnDestroy(): void {
+    // Unsubscribe from all subscriptions
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.notificationService.disconnectWebSocket();
   }
 
   setActiveSection(sectionId: string): void {
     this.activeSection = sectionId;
     console.log('📍 Active section changed to:', sectionId);
+  }
+
+  // ==================== NOTIFICATION METHODS ====================
+
+  /**
+   * Initialize notifications system
+   */
+  initializeNotifications(): void {
+    console.log('🔔 Initializing notifications...');
+    console.log('🔔 Current user:', this.currentUser);
+    console.log('🔔 Is authenticated:', this.authService.isAuthenticated());
+    console.log('🔔 Token exists:', !!this.authService.getToken());
+
+    // Subscribe to notifications
+    const notificationsSub = this.notificationService.notifications$.subscribe(
+      notifications => {
+        this.notifications = notifications;
+        console.log('📬 Notifications updated:', notifications.length, notifications);
+      }
+    );
+    this.subscriptions.push(notificationsSub);
+
+    // Subscribe to unread count
+    const unreadCountSub = this.notificationService.unreadCount$.subscribe(
+      count => {
+        this.unreadNotificationCount = count;
+        console.log('🔢 Unread count updated:', count);
+      }
+    );
+    this.subscriptions.push(unreadCountSub);
+
+    // Subscribe to new notifications
+    const newNotificationSub = this.notificationService.newNotification$.subscribe(
+      notification => {
+        console.log('🆕 New notification received:', notification);
+        this.showNotificationToast(notification);
+      }
+    );
+    this.subscriptions.push(newNotificationSub);
+
+    // Test notification service first
+    this.notificationService.testNotificationService().subscribe({
+      next: () => {
+        console.log('✅ Notification service test passed, loading notifications...');
+        this.loadNotifications();
+      },
+      error: (error) => {
+        console.error('❌ Notification service test failed:', error);
+        console.log('🔧 Notification service may not be running on port 8084');
+      }
+    });
+  }
+
+  /**
+   * Load notifications
+   */
+  loadNotifications(): void {
+    console.log('🔔 Loading notifications...');
+    this.isLoadingNotifications = true;
+
+    this.notificationService.getNotifications().subscribe({
+      next: (notifications) => {
+        console.log('✅ Notifications loaded successfully:', notifications);
+        this.notifications = notifications;
+        this.isLoadingNotifications = false;
+      },
+      error: (error) => {
+        console.error('❌ Error loading notifications:', error);
+        console.error('❌ Error details:', error.error);
+        this.isLoadingNotifications = false;
+      }
+    });
+
+    // Load unread count
+    console.log('🔔 Loading unread count...');
+    this.notificationService.getUnreadCount().subscribe({
+      next: (count) => {
+        console.log('✅ Unread count loaded:', count);
+      },
+      error: (error) => {
+        console.error('❌ Error loading unread count:', error);
+      }
+    });
+  }
+
+  /**
+   * Toggle notifications panel
+   */
+  toggleNotifications(): void {
+    this.showNotifications = !this.showNotifications;
+    if (this.showNotifications && this.notifications.length === 0) {
+      this.loadNotifications();
+    }
+  }
+
+  /**
+   * Mark notification as read
+   */
+  markNotificationAsRead(notification: NotificationDTO): void {
+    if (!notification.readStatus) {
+      this.notificationService.markAsRead(notification.id).subscribe({
+        next: () => {
+          notification.readStatus = true;
+          this.unreadNotificationCount = Math.max(0, this.unreadNotificationCount - 1);
+        },
+        error: (error) => {
+          console.error('❌ Error marking notification as read:', error);
+        }
+      });
+    }
+  }
+
+  /**
+   * Mark all notifications as read
+   */
+  markAllNotificationsAsRead(): void {
+    this.notificationService.markAllAsRead().subscribe({
+      next: () => {
+        this.notifications.forEach(n => n.readStatus = true);
+        this.unreadNotificationCount = 0;
+      },
+      error: (error) => {
+        console.error('❌ Error marking all notifications as read:', error);
+      }
+    });
+  }
+
+  /**
+   * Show notification toast (for new notifications)
+   */
+  showNotificationToast(notification: NotificationDTO): void {
+    // This could be enhanced with a proper toast library
+    console.log('🔔 New notification toast:', notification.title);
+
+    // Simple browser notification (if permission granted)
+    if (Notification.permission === 'granted') {
+      new Notification(notification.title, {
+        body: notification.message,
+        icon: '/assets/icons/notification-icon.png'
+      });
+    }
+  }
+
+  /**
+   * Get notification icon based on type
+   */
+  getNotificationIcon(type: string): string {
+    switch (type) {
+      case 'TICKET_ASSIGNED':
+        return 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2';
+      case 'TICKET_UPDATED':
+        return 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z';
+      case 'SYSTEM':
+        return 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
+      default:
+        return 'M15 17h5l-5 5v-5zM4 19h6v-2H4v2zM20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z';
+    }
+  }
+
+  /**
+   * Get notification color based on priority
+   */
+  getNotificationColor(priority: string): string {
+    switch (priority) {
+      case 'HIGH':
+        return 'text-red-400 bg-red-500/10 border-red-500/20';
+      case 'MEDIUM':
+        return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
+      case 'LOW':
+        return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+      default:
+        return 'text-slate-400 bg-slate-500/10 border-slate-500/20';
+    }
+  }
+
+  /**
+   * Get relative time for notification
+   */
+  getNotificationTime(dateString: string): string {
+    return this.getRelativeTime(dateString);
+  }
+
+  /**
+   * Track notifications for ngFor performance
+   */
+  trackNotification(index: number, notification: NotificationDTO): string {
+    return notification.id;
+  }
+
+  /**
+   * Clean notification title by removing ticket ID
+   */
+  getCleanNotificationTitle(title: string): string {
+    // Remove ticket ID pattern like "Ticket #7ce70caa assigned to you"
+    return title.replace(/Ticket #[a-f0-9-]+ /gi, 'Ticket ').replace(/assigned to you/gi, 'assigné');
+  }
+
+  /**
+   * Clean notification message by removing ticket ID and improving text
+   */
+  getCleanNotificationMessage(message: string): string {
+    // Remove ticket ID and improve message
+    let cleanMessage = message.replace(/ticket: ([^:]+) by System/gi, 'ticket: $1');
+    cleanMessage = cleanMessage.replace(/You have been assigned to /gi, 'Vous avez été assigné au ');
+    return cleanMessage;
+  }
+
+  /**
+   * Get priority label in French
+   */
+  getPriorityLabel(priority: string): string {
+    switch (priority) {
+      case 'URGENT':
+        return 'Urgent';
+      case 'HIGH':
+        return 'Élevée';
+      case 'MEDIUM':
+        return 'Normale';
+      case 'LOW':
+        return 'Faible';
+      default:
+        return priority;
+    }
   }
 
   getActiveMenuTitle(): string {
@@ -1624,7 +2076,8 @@ export class TechnicianDashboardComponent implements OnInit {
       next: (tickets) => {
         console.log('✅ Loaded assigned tickets:', tickets);
         this.assignedTickets = tickets;
-        this.filteredTickets = tickets;
+        // Apply default filter (ALL)
+        this.filterTicketsByStatus(this.currentFilter);
         this.updateDashboardStats();
         this.loadRecentComments(); // Load comments after tickets are loaded
         this.loading = false;

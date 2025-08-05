@@ -136,7 +136,7 @@ export interface TechnicianStats {
   providedIn: 'root'
 })
 export class TechnicianService {
-  private readonly API_URL = 'http://localhost:8082/api/manager/technicians';
+  private readonly API_URL = 'http://localhost:8082/api/technician';
   private readonly TICKET_API_URL = 'http://localhost:8083/api';
   private readonly USER_API_URL = 'http://localhost:8082/api';
 
@@ -145,92 +145,11 @@ export class TechnicianService {
     private authService: AuthService
   ) {}
 
-  /**
-   * Get all technicians managed by current manager
-   */
-  getTechnicians(): Observable<TechnicianResponse[]> {
-    const token = this.authService.getToken();
-    console.log('🔍 Getting technicians with token:', token ? 'Present' : 'Missing');
-    console.log('🔍 Current user:', this.authService.getCurrentUser());
+  // Note: getTechnicians() removed - technicians should not list all other technicians
+  // This functionality should be in a separate TechnicianManagementService for managers
 
-    return this.http.get<TechnicianResponse[]>(this.API_URL, {
-      headers: this.getHeaders()
-    }).pipe(
-      tap(technicians => console.log('✅ Technicians loaded:', technicians.length)),
-      catchError(this.handleError('getTechnicians'))
-    );
-  }
-
-  /**
-   * Get technician by ID
-   */
-  getTechnicianById(id: string): Observable<TechnicianResponse> {
-    return this.http.get<TechnicianResponse>(`${this.API_URL}/${id}`, {
-      headers: this.getHeaders()
-    }).pipe(
-      tap(technician => console.log('✅ Technician loaded:', technician.email)),
-      catchError(this.handleError('getTechnicianById'))
-    );
-  }
-
-  /**
-   * Create new technician
-   */
-  createTechnician(request: CreateTechnicianRequest): Observable<CreateTechnicianResponse> {
-    return this.http.post<CreateTechnicianResponse>(this.API_URL, request, {
-      headers: this.getHeaders()
-    }).pipe(
-      tap(response => console.log('✅ Technician created:', response.email)),
-      catchError(this.handleError('createTechnician'))
-    );
-  }
-
-  /**
-   * Update technician
-   */
-  updateTechnician(id: string, request: UpdateTechnicianRequest): Observable<TechnicianResponse> {
-    return this.http.put<TechnicianResponse>(`${this.API_URL}/${id}`, request, {
-      headers: this.getHeaders()
-    }).pipe(
-      tap(technician => console.log('✅ Technician updated:', technician.email)),
-      catchError(this.handleError('updateTechnician'))
-    );
-  }
-
-  /**
-   * Delete technician
-   */
-  deleteTechnician(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/${id}`, {
-      headers: this.getHeaders()
-    }).pipe(
-      tap(() => console.log('✅ Technician deleted:', id)),
-      catchError(this.handleError('deleteTechnician'))
-    );
-  }
-
-  /**
-   * Toggle technician status (activate/deactivate)
-   */
-  toggleTechnicianStatus(id: string, active: boolean): Observable<any> {
-    if (active) {
-      // Reactivate technician
-      return this.http.post<any>(`${this.API_URL}/${id}/reactivate`, {}, {
-        headers: this.getHeaders()
-      }).pipe(
-        tap(() => console.log('✅ Technician reactivated:', id)),
-        catchError(this.handleError('reactivateTechnician'))
-      );
-    } else {
-      // Deactivate technician (soft delete)
-      return this.http.delete<void>(`${this.API_URL}/${id}`, {
-        headers: this.getHeaders()
-      }).pipe(
-        tap(() => console.log('✅ Technician deactivated:', id)),
-        catchError(this.handleError('deactivateTechnician'))
-      );
-    }
-  }
+  // Note: Management methods (getTechnicianById, createTechnician, updateTechnician,
+  // deleteTechnician, toggleTechnicianStatus) removed - these should be in TechnicianManagementService for managers
 
   /**
    * Get technician statistics (mock data for now)
