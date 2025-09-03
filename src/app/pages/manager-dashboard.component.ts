@@ -1203,23 +1203,153 @@ interface SubMenuItem {
     <ng-template #mttrTemplate>
       <div class="space-y-6">
         <h3 class="text-xl font-bold text-white">Temps Moyen de Résolution (MTTR)</h3>
+        
+        <!-- MTTR Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-blue-500 transition-colors">
             <div class="text-center">
+              <div class="flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
               <div class="text-3xl font-bold text-blue-400 mb-2">2h 45min</div>
               <div class="text-slate-400 text-sm">MTTR Global</div>
+              <div class="mt-2 text-xs text-green-400">↓ 15% vs mois dernier</div>
             </div>
           </div>
-          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-green-500 transition-colors">
             <div class="text-center">
+              <div class="flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                </svg>
+              </div>
               <div class="text-3xl font-bold text-green-400 mb-2">1h 30min</div>
               <div class="text-slate-400 text-sm">MTTR Cette Semaine</div>
+              <div class="mt-2 text-xs text-green-400">↓ 25% amélioration</div>
             </div>
           </div>
-          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-yellow-500 transition-colors">
             <div class="text-center">
+              <div class="flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+              </div>
               <div class="text-3xl font-bold text-yellow-400 mb-2">3h 15min</div>
               <div class="text-slate-400 text-sm">MTTR Mois Dernier</div>
+              <div class="mt-2 text-xs text-slate-400">Référence</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- MTTR Trend Chart -->
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <h4 class="text-lg font-semibold text-white mb-4">Évolution du MTTR (7 derniers jours)</h4>
+          <div class="relative h-48">
+            <!-- Chart Background -->
+            <div class="absolute inset-0 flex items-end justify-between px-4 pb-8">
+              <!-- Bar Chart -->
+              <div class="flex items-end space-x-2 w-full">
+                <div class="flex-1 flex flex-col items-center">
+                  <div class="bg-blue-500 rounded-t" style="height: 60px; width: 20px;"></div>
+                  <div class="text-xs text-slate-400 mt-2">Lun</div>
+                  <div class="text-xs text-blue-400">2h</div>
+                </div>
+                <div class="flex-1 flex flex-col items-center">
+                  <div class="bg-blue-500 rounded-t" style="height: 45px; width: 20px;"></div>
+                  <div class="text-xs text-slate-400 mt-2">Mar</div>
+                  <div class="text-xs text-blue-400">1h30</div>
+                </div>
+                <div class="flex-1 flex flex-col items-center">
+                  <div class="bg-blue-500 rounded-t" style="height: 75px; width: 20px;"></div>
+                  <div class="text-xs text-slate-400 mt-2">Mer</div>
+                  <div class="text-xs text-blue-400">2h30</div>
+                </div>
+                <div class="flex-1 flex flex-col items-center">
+                  <div class="bg-green-500 rounded-t" style="height: 40px; width: 20px;"></div>
+                  <div class="text-xs text-slate-400 mt-2">Jeu</div>
+                  <div class="text-xs text-green-400">1h20</div>
+                </div>
+                <div class="flex-1 flex flex-col items-center">
+                  <div class="bg-green-500 rounded-t" style="height: 35px; width: 20px;"></div>
+                  <div class="text-xs text-slate-400 mt-2">Ven</div>
+                  <div class="text-xs text-green-400">1h10</div>
+                </div>
+                <div class="flex-1 flex flex-col items-center">
+                  <div class="bg-yellow-500 rounded-t" style="height: 50px; width: 20px;"></div>
+                  <div class="text-xs text-slate-400 mt-2">Sam</div>
+                  <div class="text-xs text-yellow-400">1h40</div>
+                </div>
+                <div class="flex-1 flex flex-col items-center">
+                  <div class="bg-green-500 rounded-t" style="height: 30px; width: 20px;"></div>
+                  <div class="text-xs text-slate-400 mt-2">Dim</div>
+                  <div class="text-xs text-green-400">1h</div>
+                </div>
+              </div>
+            </div>
+            <!-- Y-axis labels -->
+            <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-slate-400 py-2">
+              <span>3h</span>
+              <span>2h</span>
+              <span>1h</span>
+              <span>0h</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- MTTR by Priority -->
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <h4 class="text-lg font-semibold text-white mb-4">MTTR par Priorité</h4>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span class="text-white">Critique</span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="w-32 bg-slate-600 rounded-full h-2">
+                  <div class="bg-red-500 h-2 rounded-full" style="width: 25%"></div>
+                </div>
+                <span class="text-red-400 font-medium w-16 text-right">45min</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <span class="text-white">Élevée</span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="w-32 bg-slate-600 rounded-full h-2">
+                  <div class="bg-orange-500 h-2 rounded-full" style="width: 45%"></div>
+                </div>
+                <span class="text-orange-400 font-medium w-16 text-right">1h20</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <span class="text-white">Moyenne</span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="w-32 bg-slate-600 rounded-full h-2">
+                  <div class="bg-yellow-500 h-2 rounded-full" style="width: 70%"></div>
+                </div>
+                <span class="text-yellow-400 font-medium w-16 text-right">2h30</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span class="text-white">Faible</span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="w-32 bg-slate-600 rounded-full h-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 90%"></div>
+                </div>
+                <span class="text-green-400 font-medium w-16 text-right">4h15</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1230,20 +1360,185 @@ interface SubMenuItem {
     <ng-template #slaPercentageTemplate>
       <div class="space-y-6">
         <h3 class="text-xl font-bold text-white">% de Tickets dans les Délais SLA</h3>
-        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <div class="text-center mb-6">
-            <div class="text-6xl font-bold text-green-400 mb-2">94.2%</div>
-            <div class="text-slate-400">Tickets respectant les SLA ce mois</div>
+        
+        <!-- SLA Overview -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- SLA Gauge Chart -->
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h4 class="text-lg font-semibold text-white mb-4">Performance SLA Globale</h4>
+            <div class="relative flex items-center justify-center h-48">
+              <!-- Circular Progress -->
+              <svg class="w-40 h-40 transform -rotate-90" viewBox="0 0 100 100">
+                <!-- Background circle -->
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#374151" stroke-width="8"></circle>
+                <!-- Progress circle -->
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10B981" stroke-width="8" 
+                        stroke-dasharray="251.2" stroke-dashoffset="14.6" 
+                        class="transition-all duration-1000 ease-out" stroke-linecap="round"></circle>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="text-center">
+                  <div class="text-4xl font-bold text-green-400">94.2%</div>
+                  <div class="text-slate-400 text-sm">SLA Respecté</div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 text-center">
+              <div class="text-sm text-slate-400">Objectif: 95%</div>
+              <div class="text-xs text-yellow-400 mt-1">↑ 2.1% vs mois dernier</div>
+            </div>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="text-center p-4 bg-slate-700 rounded-lg">
-              <div class="text-2xl font-bold text-green-400">156</div>
-              <div class="text-slate-400 text-sm">Dans les délais</div>
+          
+          <!-- SLA Details -->
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h4 class="text-lg font-semibold text-white mb-4">Détails SLA</h4>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between p-4 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <div>
+                    <div class="text-white font-medium">Dans les délais</div>
+                    <div class="text-slate-400 text-sm">Tickets résolus à temps</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-2xl font-bold text-green-400">156</div>
+                  <div class="text-slate-400 text-sm">tickets</div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between p-4 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div>
+                    <div class="text-white font-medium">Hors délais</div>
+                    <div class="text-slate-400 text-sm">Tickets en retard</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-2xl font-bold text-red-400">10</div>
+                  <div class="text-slate-400 text-sm">tickets</div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between p-4 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <div>
+                    <div class="text-white font-medium">À risque</div>
+                    <div class="text-slate-400 text-sm">Tickets proches de l'échéance</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-2xl font-bold text-yellow-400">8</div>
+                  <div class="text-slate-400 text-sm">tickets</div>
+                </div>
+              </div>
             </div>
-            <div class="text-center p-4 bg-slate-700 rounded-lg">
-              <div class="text-2xl font-bold text-red-400">10</div>
-              <div class="text-slate-400 text-sm">Hors délais</div>
+          </div>
+        </div>
+        
+        <!-- SLA by Priority -->
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <h4 class="text-lg font-semibold text-white mb-4">Performance SLA par Priorité</h4>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span class="text-white font-medium">Critique</span>
+                <span class="text-slate-400 text-sm">(SLA: 2h)</span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="w-32 bg-slate-600 rounded-full h-3">
+                  <div class="bg-green-500 h-3 rounded-full" style="width: 98%"></div>
+                </div>
+                <span class="text-green-400 font-bold w-16 text-right">98%</span>
+              </div>
             </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <span class="text-white font-medium">Élevée</span>
+                <span class="text-slate-400 text-sm">(SLA: 4h)</span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="w-32 bg-slate-600 rounded-full h-3">
+                  <div class="bg-green-500 h-3 rounded-full" style="width: 96%"></div>
+                </div>
+                <span class="text-green-400 font-bold w-16 text-right">96%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <span class="text-white font-medium">Moyenne</span>
+                <span class="text-slate-400 text-sm">(SLA: 8h)</span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="w-32 bg-slate-600 rounded-full h-3">
+                  <div class="bg-green-500 h-3 rounded-full" style="width: 94%"></div>
+                </div>
+                <span class="text-green-400 font-bold w-16 text-right">94%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span class="text-white font-medium">Faible</span>
+                <span class="text-slate-400 text-sm">(SLA: 24h)</span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="w-32 bg-slate-600 rounded-full h-3">
+                  <div class="bg-yellow-500 h-3 rounded-full" style="width: 89%"></div>
+                </div>
+                <span class="text-yellow-400 font-bold w-16 text-right">89%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- SLA Trend -->
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <h4 class="text-lg font-semibold text-white mb-4">Évolution SLA (30 derniers jours)</h4>
+          <div class="relative h-32">
+            <!-- Line Chart Simulation -->
+            <div class="absolute inset-0 flex items-end justify-between px-4 pb-4">
+              <div class="flex items-end space-x-1 w-full h-full">
+                <!-- Data points -->
+                <div class="flex-1 flex flex-col justify-end">
+                  <div class="w-1 bg-green-500 rounded-t" style="height: 85%"></div>
+                </div>
+                <div class="flex-1 flex flex-col justify-end">
+                  <div class="w-1 bg-green-500 rounded-t" style="height: 88%"></div>
+                </div>
+                <div class="flex-1 flex flex-col justify-end">
+                  <div class="w-1 bg-green-500 rounded-t" style="height: 92%"></div>
+                </div>
+                <div class="flex-1 flex flex-col justify-end">
+                  <div class="w-1 bg-green-500 rounded-t" style="height: 90%"></div>
+                </div>
+                <div class="flex-1 flex flex-col justify-end">
+                  <div class="w-1 bg-green-500 rounded-t" style="height: 94%"></div>
+                </div>
+                <div class="flex-1 flex flex-col justify-end">
+                  <div class="w-1 bg-green-500 rounded-t" style="height: 96%"></div>
+                </div>
+                <div class="flex-1 flex flex-col justify-end">
+                  <div class="w-1 bg-green-500 rounded-t" style="height: 94%"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Y-axis labels -->
+            <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-slate-400 py-1">
+              <span>100%</span>
+              <span>95%</span>
+              <span>90%</span>
+              <span>85%</span>
+            </div>
+          </div>
+          <div class="flex justify-between text-xs text-slate-400 mt-2 px-4">
+            <span>Il y a 30j</span>
+            <span>Il y a 20j</span>
+            <span>Il y a 10j</span>
+            <span>Aujourd'hui</span>
           </div>
         </div>
       </div>
@@ -1253,8 +1548,94 @@ interface SubMenuItem {
     <ng-template #categoryDistributionTemplate>
       <div class="space-y-6">
         <h3 class="text-xl font-bold text-white">Répartition par Catégorie</h3>
-        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <p class="text-slate-400">Graphiques de répartition des tickets par catégorie...</p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Pie Chart Visualization -->
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h4 class="text-lg font-semibold text-white mb-4">Distribution Visuelle</h4>
+            <div class="relative h-64 flex items-center justify-center">
+              <!-- SVG Pie Chart -->
+              <svg class="w-48 h-48 transform -rotate-90" viewBox="0 0 100 100">
+                <!-- Hardware - 35% -->
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#3B82F6" stroke-width="20" 
+                        stroke-dasharray="35 65" stroke-dashoffset="0" class="transition-all duration-500"></circle>
+                <!-- Software - 25% -->
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10B981" stroke-width="20" 
+                        stroke-dasharray="25 75" stroke-dashoffset="-35" class="transition-all duration-500"></circle>
+                <!-- Réseau - 20% -->
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#F59E0B" stroke-width="20" 
+                        stroke-dasharray="20 80" stroke-dashoffset="-60" class="transition-all duration-500"></circle>
+                <!-- Accès - 15% -->
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#EF4444" stroke-width="20" 
+                        stroke-dasharray="15 85" stroke-dashoffset="-80" class="transition-all duration-500"></circle>
+                <!-- Autre - 5% -->
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#8B5CF6" stroke-width="20" 
+                        stroke-dasharray="5 95" stroke-dashoffset="-95" class="transition-all duration-500"></circle>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-white">{{ teamTickets.length }}</div>
+                  <div class="text-slate-400 text-sm">Total</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Category Details -->
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h4 class="text-lg font-semibold text-white mb-4">Détails par Catégorie</h4>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-4 h-4 bg-blue-500 rounded-full"></div>
+                  <span class="text-white font-medium">Hardware</span>
+                </div>
+                <div class="text-right">
+                  <div class="text-white font-bold">{{ getTicketCountByCategory('Hardware') }}</div>
+                  <div class="text-slate-400 text-sm">35%</div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+                  <span class="text-white font-medium">Software</span>
+                </div>
+                <div class="text-right">
+                  <div class="text-white font-bold">{{ getTicketCountByCategory('Software') }}</div>
+                  <div class="text-slate-400 text-sm">25%</div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-4 h-4 bg-yellow-500 rounded-full"></div>
+                  <span class="text-white font-medium">Réseau</span>
+                </div>
+                <div class="text-right">
+                  <div class="text-white font-bold">{{ getTicketCountByCategory('Réseau') }}</div>
+                  <div class="text-slate-400 text-sm">20%</div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-4 h-4 bg-red-500 rounded-full"></div>
+                  <span class="text-white font-medium">Accès</span>
+                </div>
+                <div class="text-right">
+                  <div class="text-white font-bold">{{ getTicketCountByCategory('Accès') }}</div>
+                  <div class="text-slate-400 text-sm">15%</div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-4 h-4 bg-purple-500 rounded-full"></div>
+                  <span class="text-white font-medium">Autre</span>
+                </div>
+                <div class="text-right">
+                  <div class="text-white font-bold">{{ getTicketCountByCategory('Autre') }}</div>
+                  <div class="text-slate-400 text-sm">5%</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </ng-template>
@@ -1263,40 +1644,223 @@ interface SubMenuItem {
     <ng-template #workloadTemplate>
       <div class="space-y-6">
         <h3 class="text-xl font-bold text-white">Charge Actuelle par Technicien</h3>
+        
+        <!-- Workload Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <div class="text-center">
+              <div class="flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+              </div>
+              <div class="text-3xl font-bold text-blue-400 mb-2">{{ technicians.length }}</div>
+              <div class="text-slate-400 text-sm">Techniciens Actifs</div>
+            </div>
+          </div>
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <div class="text-center">
+              <div class="flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+              </div>
+              <div class="text-3xl font-bold text-yellow-400 mb-2">68%</div>
+              <div class="text-slate-400 text-sm">Charge Moyenne</div>
+            </div>
+          </div>
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <div class="text-center">
+              <div class="flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div class="text-3xl font-bold text-green-400 mb-2">{{ getUnassignedTicketsCount() }}</div>
+              <div class="text-slate-400 text-sm">Tickets Non Assignés</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Technician Workload Details -->
         <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <h4 class="text-lg font-semibold text-white mb-4">Détail de la Charge par Technicien</h4>
           <div class="space-y-4">
-            <div class="flex items-center justify-between p-4 bg-slate-700 rounded-lg">
-              <div class="flex items-center space-x-3">
-                <div class="h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span class="text-white font-medium text-sm">JD</span>
+            <div class="flex items-center justify-between p-4 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors">
+              <div class="flex items-center space-x-4">
+                <div class="h-12 w-12 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span class="text-white font-medium">JD</span>
                 </div>
-                <div>
+                <div class="flex-1">
                   <div class="text-white font-medium">Jean Dupont</div>
-                  <div class="text-slate-400 text-sm">8 tickets assignés</div>
+                  <div class="text-slate-400 text-sm">Spécialiste Hardware • En ligne</div>
+                  <div class="flex items-center space-x-4 mt-1">
+                    <span class="text-xs text-slate-400">8 tickets assignés</span>
+                    <span class="text-xs text-blue-400">• 3 en cours</span>
+                    <span class="text-xs text-green-400">• 5 résolus aujourd'hui</span>
+                  </div>
                 </div>
               </div>
-              <div class="flex items-center space-x-3">
-                <div class="w-24 bg-slate-600 rounded-full h-2">
-                  <div class="bg-yellow-500 h-2 rounded-full" style="width: 80%"></div>
+              <div class="flex items-center space-x-4">
+                <div class="text-right">
+                  <div class="text-sm text-slate-400">Charge</div>
+                  <div class="w-32 bg-slate-600 rounded-full h-3 mt-1">
+                    <div class="bg-yellow-500 h-3 rounded-full transition-all duration-500" style="width: 80%"></div>
+                  </div>
                 </div>
-                <span class="text-yellow-400 font-medium">80%</span>
+                <span class="text-yellow-400 font-bold text-lg w-12 text-right">80%</span>
               </div>
             </div>
-            <div class="flex items-center justify-between p-4 bg-slate-700 rounded-lg">
-              <div class="flex items-center space-x-3">
-                <div class="h-10 w-10 bg-green-500 rounded-full flex items-center justify-center">
-                  <span class="text-white font-medium text-sm">ML</span>
+            
+            <div class="flex items-center justify-between p-4 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors">
+              <div class="flex items-center space-x-4">
+                <div class="h-12 w-12 bg-green-500 rounded-full flex items-center justify-center">
+                  <span class="text-white font-medium">ML</span>
                 </div>
-                <div>
+                <div class="flex-1">
                   <div class="text-white font-medium">Marie Leroy</div>
-                  <div class="text-slate-400 text-sm">5 tickets assignés</div>
+                  <div class="text-slate-400 text-sm">Spécialiste Software • En ligne</div>
+                  <div class="flex items-center space-x-4 mt-1">
+                    <span class="text-xs text-slate-400">5 tickets assignés</span>
+                    <span class="text-xs text-blue-400">• 2 en cours</span>
+                    <span class="text-xs text-green-400">• 3 résolus aujourd'hui</span>
+                  </div>
                 </div>
               </div>
-              <div class="flex items-center space-x-3">
-                <div class="w-24 bg-slate-600 rounded-full h-2">
-                  <div class="bg-green-500 h-2 rounded-full" style="width: 50%"></div>
+              <div class="flex items-center space-x-4">
+                <div class="text-right">
+                  <div class="text-sm text-slate-400">Charge</div>
+                  <div class="w-32 bg-slate-600 rounded-full h-3 mt-1">
+                    <div class="bg-green-500 h-3 rounded-full transition-all duration-500" style="width: 50%"></div>
+                  </div>
                 </div>
-                <span class="text-green-400 font-medium">50%</span>
+                <span class="text-green-400 font-bold text-lg w-12 text-right">50%</span>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between p-4 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors">
+              <div class="flex items-center space-x-4">
+                <div class="h-12 w-12 bg-purple-500 rounded-full flex items-center justify-center">
+                  <span class="text-white font-medium">PM</span>
+                </div>
+                <div class="flex-1">
+                  <div class="text-white font-medium">Pierre Martin</div>
+                  <div class="text-slate-400 text-sm">Spécialiste Réseau • En ligne</div>
+                  <div class="flex items-center space-x-4 mt-1">
+                    <span class="text-xs text-slate-400">12 tickets assignés</span>
+                    <span class="text-xs text-blue-400">• 6 en cours</span>
+                    <span class="text-xs text-green-400">• 2 résolus aujourd'hui</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="text-right">
+                  <div class="text-sm text-slate-400">Charge</div>
+                  <div class="w-32 bg-slate-600 rounded-full h-3 mt-1">
+                    <div class="bg-red-500 h-3 rounded-full transition-all duration-500" style="width: 95%"></div>
+                  </div>
+                </div>
+                <span class="text-red-400 font-bold text-lg w-12 text-right">95%</span>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between p-4 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors">
+              <div class="flex items-center space-x-4">
+                <div class="h-12 w-12 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span class="text-white font-medium">SB</span>
+                </div>
+                <div class="flex-1">
+                  <div class="text-white font-medium">Sophie Bernard</div>
+                  <div class="text-slate-400 text-sm">Support Général • Absent</div>
+                  <div class="flex items-center space-x-4 mt-1">
+                    <span class="text-xs text-slate-400">3 tickets assignés</span>
+                    <span class="text-xs text-blue-400">• 1 en cours</span>
+                    <span class="text-xs text-green-400">• 1 résolu aujourd'hui</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="text-right">
+                  <div class="text-sm text-slate-400">Charge</div>
+                  <div class="w-32 bg-slate-600 rounded-full h-3 mt-1">
+                    <div class="bg-blue-500 h-3 rounded-full transition-all duration-500" style="width: 30%"></div>
+                  </div>
+                </div>
+                <span class="text-blue-400 font-bold text-lg w-12 text-right">30%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Workload Distribution Chart -->
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <h4 class="text-lg font-semibold text-white mb-4">Distribution de la Charge</h4>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Bar Chart -->
+            <div class="relative h-48">
+              <div class="absolute inset-0 flex items-end justify-between px-4 pb-8">
+                <div class="flex items-end space-x-3 w-full">
+                  <div class="flex-1 flex flex-col items-center">
+                    <div class="bg-yellow-500 rounded-t" style="height: 80px; width: 30px;"></div>
+                    <div class="text-xs text-slate-400 mt-2 text-center">Jean D.</div>
+                    <div class="text-xs text-yellow-400">80%</div>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center">
+                    <div class="bg-green-500 rounded-t" style="height: 50px; width: 30px;"></div>
+                    <div class="text-xs text-slate-400 mt-2 text-center">Marie L.</div>
+                    <div class="text-xs text-green-400">50%</div>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center">
+                    <div class="bg-red-500 rounded-t" style="height: 95px; width: 30px;"></div>
+                    <div class="text-xs text-slate-400 mt-2 text-center">Pierre M.</div>
+                    <div class="text-xs text-red-400">95%</div>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center">
+                    <div class="bg-blue-500 rounded-t" style="height: 30px; width: 30px;"></div>
+                    <div class="text-xs text-slate-400 mt-2 text-center">Sophie B.</div>
+                    <div class="text-xs text-blue-400">30%</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Y-axis labels -->
+              <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-slate-400 py-2">
+                <span>100%</span>
+                <span>75%</span>
+                <span>50%</span>
+                <span>25%</span>
+                <span>0%</span>
+              </div>
+            </div>
+            
+            <!-- Workload Status -->
+            <div class="space-y-4">
+              <div class="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span class="text-white">Charge Optimale (< 70%)</span>
+                </div>
+                <span class="text-green-400 font-medium">1 technicien</span>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <span class="text-white">Charge Élevée (70-90%)</span>
+                </div>
+                <span class="text-yellow-400 font-medium">1 technicien</span>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span class="text-white">Surcharge (> 90%)</span>
+                </div>
+                <span class="text-red-400 font-medium">1 technicien</span>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span class="text-white">Disponible (< 50%)</span>
+                </div>
+                <span class="text-blue-400 font-medium">1 technicien</span>
               </div>
             </div>
           </div>
